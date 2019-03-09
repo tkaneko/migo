@@ -5,8 +5,9 @@ from typing import Set, List, Dict, Union
 
 import numpy as np
 
+from pygo.gtp import parse_move
 from pygo.hash import NeighborTable, ZobristHash
-from pygo.misc import all_coordinates, Color, Coord, Move, IllegalMoveError, Pass
+from pygo.misc import all_coordinates, Color, Coord, Move, IllegalMoveError, Pass, index_to_coord
 
 
 class State:
@@ -80,6 +81,15 @@ class State:
         return set(self.__legal_moves_cache)
 
     def make_move(self, action: Union[Move, int, str], color: Color = None) -> bool:
+        if isinstance(action, tuple) or action is None:
+            pass
+        elif isinstance(action, int):
+            action = index_to_coord(action, self.board_size)
+        elif isinstance(action, str):
+            action = parse_move(action)
+        else:
+            raise IllegalMoveError("Expected tuple, int, or str but got `%s`" % type(action))
+
         ret = self.__make_move_impl(action, color)
 
         if self.history_buffer_len <= 0:
