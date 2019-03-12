@@ -62,11 +62,8 @@ void setup_move(py::module& m) {
 
 void setup_state(py::module& m) {
     py::class_<cygo::State>(m, "State")
-            .def(py::init<std::size_t, double, bool, bool>(),
-                 "size"_a, "komi"_a = 7.5, "superko_rule"_a = false, "retain_history"_a = false
-            )
             .def(py::init<std::size_t, double, bool, int>(),
-                 "size"_a, "komi"_a = 7.5, "superko_rule"_a = false, "history_length"_a = 0
+                 "board_size"_a, "komi"_a = 7.5, "superko_rule"_a = true, "max_history_n"_a = 7
             )
             .def_property("current_player",
                           [](cygo::State const& state) { return state.current_player; },
@@ -86,15 +83,14 @@ void setup_state(py::module& m) {
                                    [](cygo::State const& state) { return state.last_move(); },
                                    "Return the last move"
             )
-            .def_property_readonly("history_length",
-                                   [](cygo::State const& state) { return state.history().history_length; },
-                                   "Return history length"
-            )
-            .def_property_readonly("retain_history",
-                                   [](cygo::State const& state) { return state.history().history_length > 0; }
+            .def_property_readonly("max_history_n",
+                                   [](cygo::State const& state) { return state.max_history_n(); }
             )
             .def_property_readonly("superko_rule",
                                    [](cygo::State const& state) { return state.superko_rule(); }
+            )
+            .def_property_readonly("zobrist_hash",
+                                   [](cygo::State const& state) { return state.hash(); }
             )
             .def("__str__",
                  [] (cygo::State const& state) {
@@ -206,10 +202,7 @@ void setup_state(py::module& m) {
                     state.make_move(cygo::Move::from_coordinate(v.first, v.second, state.board_size()), c);
                  },
                  "Apply move to the state as color",
-                 "move"_a, "color"_a = cygo::Color::EMPTY)
-            .def("zobrist_hash",
-                 &cygo::State::hash,
-                 "Return a zobrist hash value"
+                 "move"_a, "color"_a = cygo::Color::EMPTY
             );
 }
 
