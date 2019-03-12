@@ -11,7 +11,7 @@ from pygo.misc import all_coordinates, Color, Coord, Move, IllegalMoveError, Pas
 
 
 class State:
-    def __init__(self, board_size: int = 19, komi: float = 7.5, superko_rule=True, history_buffer_len=0):
+    def __init__(self, board_size: int = 19, komi: float = 7.5, superko_rule=True, history_buffer_len=8):
         self.neighbor_table = NeighborTable(size=board_size)
 
         self.__legal_moves_cache = None  # type: Set[Coord]
@@ -47,7 +47,10 @@ class State:
         self.history_buffer = []  # type: List[np.ndarray]
 
     def copy(self):
-        other = State(board_size=self.board_size, komi=self.komi, superko_rule=self.superko_rule)
+        other = State(board_size=self.board_size,
+                      komi=self.komi,
+                      superko_rule=self.superko_rule,
+                      history_buffer_len=self.history_buffer_len)
 
         other.ko = self.ko
         other.is_game_over = self.is_game_over
@@ -90,12 +93,14 @@ class State:
         else:
             raise IllegalMoveError("Expected tuple, int, or str but got `%s`" % type(action))
 
+        if self.history_buffer_len <= 0:
+            return self.__make_move_impl(action, color)
+
+        board = self.board.copy()
+
         ret = self.__make_move_impl(action, color)
 
-        if self.history_buffer_len <= 0:
-            return ret
-
-        self.history_buffer.append(self.board.copy())
+        self.history_buffer.append(board)
 
         while len(self.history_buffer) > self.history_buffer_len:
             self.history_buffer.pop(0)
