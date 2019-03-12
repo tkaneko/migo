@@ -27,13 +27,15 @@ struct hash<std::pair<int, int>> {
 }
 
 
-PYBIND11_MODULE(cygo, m) {
+void setup_color(py::module& m) {
     py::enum_<cygo::Color>(m, "Color")
             .value("BLACK", cygo::Color::BLACK)
             .value("WHITE", cygo::Color::WHITE)
             .value("EMPTY", cygo::Color::EMPTY)
             .export_values();
+}
 
+void setup_move(py::module& m) {
     py::class_<cygo::Move>(m, "Move")
             .def_static("from_coordinate",
                  &cygo::Move::from_coordinate,
@@ -65,7 +67,10 @@ PYBIND11_MODULE(cygo, m) {
             .def_property_readonly_static("ANY",     [](py::object) { return cygo::Move::ANY; })
             .def_property_readonly_static("INVALID", [](py::object) { return cygo::Move::INVALID; })
             .def_property_readonly_static("PASS",    [](py::object) { return cygo::Move::PASS; });
+}
 
+
+void setup_state(py::module& m) {
     py::class_<cygo::State>(m, "State")
             .def(py::init<std::size_t, double, bool, bool>(),
                  "size"_a, "komi"_a = 7.5, "superko_rule"_a = false, "retain_history"_a = false
@@ -216,8 +221,9 @@ PYBIND11_MODULE(cygo, m) {
                  &cygo::State::hash,
                  "Return a zobrist hash value"
             );
+}
 
-
+void setup_attributes(py::module& m) {
     m.attr("Pass") = nullptr;
 
     m.def("apply_moves",
@@ -231,7 +237,9 @@ PYBIND11_MODULE(cygo, m) {
           "Return the opposite color of a given color",
           "color"_a
     );
+}
 
+void setup_features(py::module& m) {
     py::module m_features = m.def_submodule("features");
 
     m_features.def("board_i",
@@ -251,5 +259,14 @@ PYBIND11_MODULE(cygo, m) {
 
     m_features.def("color_black", &cygo::black);
     m_features.def("color_white", &cygo::white);
+}
+
+
+PYBIND11_MODULE(cygo, m) {
+    setup_color(m);
+    setup_move(m);
+    setup_state(m);
+    setup_attributes(m);
+    setup_features(m);
 }
 
