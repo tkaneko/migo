@@ -46,15 +46,7 @@ void setup_move(py::module& m) {
             .def("raw", &cygo::Move::raw)
             .def("__repr__", [](cygo::Move const& v) -> std::string {
                 if (v == cygo::Move::PASS) {
-                    return "Move.PASS";
-                }
-
-                if (v == cygo::Move::ANY) {
-                    return "Move.ANY";
-                }
-
-                if (v == cygo::Move::INVALID) {
-                    return "Move.INVALID";
+                    return "Move.Pass";
                 }
 
                 std::ostringstream os;
@@ -64,9 +56,7 @@ void setup_move(py::module& m) {
             })
             .def(py::self == py::self)
             .def(py::self != py::self)
-            .def_property_readonly_static("ANY",     [](py::object) { return cygo::Move::ANY; })
-            .def_property_readonly_static("INVALID", [](py::object) { return cygo::Move::INVALID; })
-            .def_property_readonly_static("PASS",    [](py::object) { return cygo::Move::PASS; });
+            .def_property_readonly_static("Pass", [](py::object) { return cygo::Move::PASS; });
 }
 
 
