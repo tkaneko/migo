@@ -104,6 +104,10 @@ bool StateImpl::is_suicide_move(Color c, Move const &v) const {
 }
 
 bool StateImpl::is_positional_superko(Color c, Move const& v) const {
+    if (move_history_.count(c) == 0) {
+        return false;
+    }
+
     auto const& move_history = move_history_.at(c);
 
     if (std::find(std::begin(move_history), std::end(move_history), v) == std::end(move_history)) {
