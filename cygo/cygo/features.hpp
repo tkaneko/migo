@@ -27,12 +27,12 @@ std::vector<T> color(State const& state, Color c) {
 }
 
 template <typename T>
-std::vector<T> board_i_color(State const& state, int i, Color c) {
+std::vector<T> board_i_color(State const& state, std::size_t i, Color c) {
     // Returns the color's plane of S at T_{t-i}.
     // The shape of the resultant array is (1, size, size)
     assert(c != Color::EMPTY);
 
-    auto const& history = state.history().history(c);
+    auto const& history = state.history(c);
 
     auto board_size = static_cast<std::size_t>(state.board_size());
     auto plane_size = board_size * board_size;
@@ -53,8 +53,8 @@ std::vector<T> board_i_color(State const& state, int i, Color c) {
 }
 
 template <typename T>
-std::vector<T> board_i(State const& state, int i) {
-    assert(0 <= i and i < state.history().history_length);
+std::vector<T> board_i(State const& state, std::size_t i) {
+    assert(0 <= i and i <= state.max_history_n());
 
     // Returns the plane of S at T_{t-i}
     // shape: (2, size, size)
@@ -64,8 +64,10 @@ std::vector<T> board_i(State const& state, int i) {
 
     std::vector<T> ret(array_size, T(0));
 
-    auto const& history_1 = state.history().history(state.current_player);
-    auto const& history_2 = state.history().history(opposite_color(state.current_player));
+    auto const& history_1 = state.history(state.current_player);
+    auto const& history_2 = state.history(opposite_color(state.current_player));
+
+    assert(history_1.size() == history_2.size());
 
     if (history_1.size() <= i or history_2.size() <= i) {
         return ret;
@@ -87,8 +89,8 @@ std::vector<T> board_i(State const& state, int i) {
 }
 
 template <typename T>
-std::vector<T> history_n_color(State const& state, int n, Color c) {
-    assert(0 <= n and n < state.history().history_length);
+std::vector<T> history_n_color(State const& state, std::size_t n, Color c) {
+    assert(0 <= n and n <= state.max_history_n());
 
     auto board_size = static_cast<std::size_t>(state.board_size());
     auto plane_size = board_size * board_size;
@@ -96,11 +98,11 @@ std::vector<T> history_n_color(State const& state, int n, Color c) {
 
     std::vector<T> ret(array_size, T(0));
 
-    auto const& history = state.history().history(c);
+    auto const& history = state.history(c);
     auto itr = std::begin(history);
 
-    int i = 0;
-    int length = history.size();
+    std::size_t i = 0;
+    auto length = history.size();
 
     auto ret_itr = std::begin(ret);
 
@@ -117,8 +119,8 @@ std::vector<T> history_n_color(State const& state, int n, Color c) {
 }
 
 template <typename T>
-std::vector<T> history_n(State const& state, int n) {
-    assert(0 <= n and n < state.history().history_length);
+std::vector<T> history_n(State const& state, std::size_t n) {
+    assert(0 <= n and n < state.max_history_n());
 
     auto board_size = static_cast<std::size_t>(state.board_size());
     auto plane_size = board_size * board_size;
@@ -126,14 +128,16 @@ std::vector<T> history_n(State const& state, int n) {
 
     std::vector<T> ret(array_size, T(0));
 
-    auto const& history_1 = state.history().history(state.current_player);
-    auto const& history_2 = state.history().history(opposite_color(state.current_player));
+    auto const& history_1 = state.history(state.current_player);
+    auto const& history_2 = state.history(opposite_color(state.current_player));
+
+    assert(history_1.size() == history_2.size());
 
     auto itr_1 = std::begin(history_1);
     auto itr_2 = std::begin(history_2);
 
-    int i = 0;
-    int length = history_1.size();
+    std::size_t i = 0;
+    auto length = history_1.size();
 
     auto ret_itr = std::begin(ret);
 

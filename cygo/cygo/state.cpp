@@ -11,47 +11,62 @@ namespace cygo {
 IllegalMoveException::IllegalMoveException(std::string const& s) : invalid_argument(s) {}
 
 
-History::History(int history_length) : history_length(history_length) { }
+class State::History {
+private:
+    std::list<std::vector<int>> black_history_;
+    std::list<std::vector<int>> white_history_;
 
-void History::add(State const& state) {
-    if (history_length == 0) {
-        return;
+public:
+    const std::size_t max_buffer_len;
+
+    explicit History(std::size_t max_buffer_len) : max_buffer_len(max_buffer_len) { }
+
+    void on_after_make_move(State const& state) {
+        black_history_.push_front(state.black_board());
+        white_history_.push_front(state.white_board());
+
+        while (black_history_.size() > max_buffer_len) {
+            black_history_.pop_back();
+        }
+
+        while (white_history_.size() > max_buffer_len) {
+            white_history_.pop_back();
+        }
+
+        assert(black_history_.size() == white_history_.size());
     }
 
-    if (black_history.size() == history_length) {
-        black_history.pop_back();
-        white_history.pop_back();
+    std::list<std::vector<int>> const& get(Color c) const {
+        if (c == Color::BLACK) {
+            return black_history_;
+        }
+
+        if (c == Color::WHITE) {
+            return white_history_;
+        }
+
+        throw std::invalid_argument("");
     }
-
-    black_history.push_front(state.black_board());
-    white_history.push_front(state.white_board());
-}
-
-std::list<std::vector<int>> const& History::history(Color c) const {
-    return (c == Color::BLACK) ? black_history : white_history;
-}
+};
 
 
-State::State(int board_size, double komi, bool superko_rule, int history_length) :
+State::State(int board_size, double komi, bool superko_rule, std::size_t max_history_n) :
         komi(komi),
         current_player(Color::BLACK),
-        history_(history_length),
         last_move_(Move::INVALID),
-        state_(new StateImpl(board_size, superko_rule))
-{ }
-
-State::State(int board_size, double komi, bool superko_rule, bool retain_history) :
-        State(board_size, komi, superko_rule, (retain_history) ? 10 : 0)
+        history_(std::make_unique<History>(max_history_n + 1)),  // +1 for the current state
+        state_(std::make_unique<StateImpl>(board_size, superko_rule))
 { }
 
 State::State(State const& other) :
         komi(other.komi),
         current_player(other.current_player),
-        history_(other.history_),
-        last_move_(other.last_move_)
-{
-    state_ = std::make_shared<StateImpl>(*other.state_);
-}
+        last_move_(other.last_move_),
+        history_(std::make_unique<History>(*other.history_)),
+        state_(std::make_unique<StateImpl>(*other.state_))
+{ }
+
+State::~State() = default;
 
 void State::make_move(Move const& move, Color player) {
     if (player == Color::EMPTY) {
@@ -65,7 +80,7 @@ void State::make_move(Move const& move, Color player) {
     state_->make_move(player, move);
     last_move_ = move;
 
-    history_.add(*this);
+    history_->on_after_make_move(*this);
 
     current_player = opposite_color(current_player);
 }
@@ -98,8 +113,12 @@ std::vector<int> const& State::white_board() const {
     return state_->chain_group().white_board();
 }
 
-History const& State::history() const {
-    return history_;
+std::list<std::vector<int>> const& State::history(Color c) const {
+    return history_->get(c);
+}
+
+std::size_t State::max_history_n() const {
+    return history_->max_buffer_len - 1;
 }
 
 int State::board_size() const {

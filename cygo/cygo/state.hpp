@@ -15,34 +15,22 @@
 namespace cygo {
 
 class StateImpl;
-class State;
 
 class IllegalMoveException : public std::invalid_argument {
 public:
     explicit IllegalMoveException(std::string const &s);
 };
 
-struct History {
-    const int history_length;
-
-    std::list<std::vector<int>> black_history;
-    std::list<std::vector<int>> white_history;
-
-    explicit History(int history_length);
-
-    void add(State const& state);
-
-    std::list<std::vector<int>> const& history(Color c) const;
-};
 
 class State {
 public:
-    explicit State(int board_size, double komi, bool superko_rule, bool retain_history);
-    explicit State(int board_size, double komi, bool superko_rule, int history_length);
+    explicit State(int board_size, double komi, bool superko_rule, std::size_t max_history_n);
 
     State(State const&);
 
     State& operator=(State const&) = delete;
+
+    ~State();
 
     void make_move(Move const &move, Color player = Color::EMPTY);
 
@@ -54,8 +42,9 @@ public:
 
     std::vector<int> const& black_board() const;
     std::vector<int> const& white_board() const;
+    std::list<std::vector<int>> const& history(Color c) const;
 
-    History const& history() const;
+    std::size_t max_history_n() const;
 
     int board_size() const;
     bool superko_rule() const;
@@ -74,10 +63,12 @@ public:
     Color current_player;
 
 private:
-    History history_;
+    class History;
+
     Move last_move_;
 
-    std::shared_ptr<StateImpl> state_;
+    std::unique_ptr<History> history_;
+    std::unique_ptr<StateImpl> state_;
 };
 
 }  // namespace cygo

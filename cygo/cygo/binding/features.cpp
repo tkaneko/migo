@@ -39,41 +39,41 @@ py::array_t<float> white(State const& state) {
 
 
 py::array_t<float> board_i(State const& state, int i, Color c) {
-    auto const length = state.history().history_length;
+    auto const length = state.max_history_n();
 
-    if (i < 0 or state.history().history_length <= i) {
+    if (i < 0 or length < static_cast<std::size_t>(i)) {
         std::ostringstream os;
-        os << "Given index (" << i << ") is out of bound. Expected in [0, " << length << ")";
+        os << "Given index (" << i << ") is out of bound. Expected in [0, " << length << "]";
 
         throw std::invalid_argument(os.str());
     }
 
     if (c == Color::EMPTY) {
-        return make_pyarray(to_ptr(feature_impl::board_i<float>(state, i)),
+        return make_pyarray(to_ptr(feature_impl::board_i<float>(state, static_cast<std::size_t>(i))),
                             {2, state.board_size(), state.board_size()});
     }
     else {
-        return make_pyarray(to_ptr(feature_impl::board_i_color<float>(state, i, c)),
+        return make_pyarray(to_ptr(feature_impl::board_i_color<float>(state, static_cast<std::size_t>(i), c)),
                             {1, state.board_size(), state.board_size()});
     }
 }
 
 py::array_t<float> history_n(State const& state, int n, Color c) {
-    auto const length = state.history().history_length;
+    auto const length = state.max_history_n();
 
-    if (n < 0 or length <= n) {
+    if (n < 0 or length < static_cast<std::size_t>(n)) {
         std::ostringstream os;
-        os << "Given index (" << n << ") is out of bound. Expected in [0, " << length << ")";
+        os << "Given index (" << n << ") is out of bound. Expected in [0, " << length << "]";
 
         throw std::invalid_argument(os.str());
     }
 
     if (c == Color::EMPTY) {
-        return make_pyarray(to_ptr(feature_impl::history_n<float>(state, n)),
+        return make_pyarray(to_ptr(feature_impl::history_n<float>(state, static_cast<std::size_t>(n))),
                             {2 * (n + 1), state.board_size(), state.board_size()});
     }
     else {
-        return make_pyarray(to_ptr(feature_impl::history_n_color<float>(state, n, c)),
+        return make_pyarray(to_ptr(feature_impl::history_n_color<float>(state, static_cast<std::size_t>(n), c)),
                             {n + 1, state.board_size(), state.board_size()});
     }
 }
