@@ -70,6 +70,7 @@ setup(
     long_description='',
     packages=[
         'pygo',
+        'pygo.features',
         'pygo.gtp',
     ],
     ext_modules=[
