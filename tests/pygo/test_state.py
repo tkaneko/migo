@@ -4,32 +4,7 @@ import numpy as np
 import numpy.testing as npt
 
 from pygo import State, Color, IllegalMoveError, all_coordinates
-
-
-def parse(board_str: str, next_color: Color = None):
-    board_str = board_str.replace(' ', '')
-    size = max(board_str.index('|'), board_str.count('|'))
-
-    state = State(board_size=size)
-
-    moves = {}
-
-    for row, row_str in enumerate(board_str.split('|')):
-        for col, c in enumerate(row_str):
-            if c == '.':
-                continue
-
-            if c in 'BX#':
-                state.make_move((row, col), color=Color.BLACK)
-            elif c in 'WO':
-                state.make_move((row, col), color=Color.WHITE)
-            else:
-                moves[c] = (row, col)
-
-    if next_color:
-        state.current_player = next_color
-
-    return state, moves
+from pygo.state import parse
 
 
 def random_state(seed=None):

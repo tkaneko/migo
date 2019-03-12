@@ -509,3 +509,29 @@ class State:
         buffer.write("\n")
 
         return buffer.getvalue()
+
+
+def parse(board_str: str, next_color: Color = None):
+    board_str = board_str.replace(' ', '')
+    size = max(board_str.index('|'), board_str.count('|'))
+
+    state = State(board_size=size)
+
+    moves = {}
+
+    for row, row_str in enumerate(board_str.split('|')):
+        for col, c in enumerate(row_str):
+            if c == '.':
+                continue
+
+            if c in 'BX#':
+                state.make_move((row, col), color=Color.BLACK)
+            elif c in 'WO':
+                state.make_move((row, col), color=Color.WHITE)
+            else:
+                moves[c] = (row, col)
+
+    if next_color:
+        state.current_player = next_color
+
+    return state, moves
