@@ -8,9 +8,10 @@
 
 
 namespace cygo {
+namespace feature_impl {
 
 template <typename T>
-std::vector<T> color_impl(State const& state, Color c) {
+std::vector<T> color(State const& state, Color c) {
     assert(c != Color::EMPTY);
 
     auto board_size = static_cast<std::size_t>(state.board_size());
@@ -26,7 +27,7 @@ std::vector<T> color_impl(State const& state, Color c) {
 }
 
 template <typename T>
-std::vector<T> board_i_color_impl(State const& state, int i, Color c) {
+std::vector<T> board_i_color(State const& state, int i, Color c) {
     // Returns the color's plane of S at T_{t-i}.
     // The shape of the resultant array is (1, size, size)
     assert(c != Color::EMPTY);
@@ -52,7 +53,7 @@ std::vector<T> board_i_color_impl(State const& state, int i, Color c) {
 }
 
 template <typename T>
-std::vector<T> board_i_impl(State const& state, int i) {
+std::vector<T> board_i(State const& state, int i) {
     assert(0 <= i and i < state.history().history_length);
 
     // Returns the plane of S at T_{t-i}
@@ -86,7 +87,7 @@ std::vector<T> board_i_impl(State const& state, int i) {
 }
 
 template <typename T>
-std::vector<T> history_n_color_impl(State const& state, int n, Color c) {
+std::vector<T> history_n_color(State const& state, int n, Color c) {
     assert(0 <= n and n < state.history().history_length);
 
     auto board_size = static_cast<std::size_t>(state.board_size());
@@ -116,7 +117,7 @@ std::vector<T> history_n_color_impl(State const& state, int n, Color c) {
 }
 
 template <typename T>
-std::vector<T> history_n_impl(State const& state, int n) {
+std::vector<T> history_n(State const& state, int n) {
     assert(0 <= n and n < state.history().history_length);
 
     auto board_size = static_cast<std::size_t>(state.board_size());
@@ -151,6 +152,7 @@ std::vector<T> history_n_impl(State const& state, int n) {
     return ret;
 }
 
+}  // namespace feature_impl
 }  // namespace cygo
 
 #endif //CYGO_IMPL_FEATURES_HPP

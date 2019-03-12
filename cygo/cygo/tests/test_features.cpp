@@ -3,6 +3,7 @@
 #include "cygo/features.hpp"
 
 using namespace cygo;
+using namespace cygo::feature_impl;
 
 
 TEST(features_test, color_impl_when_current_is_black) {
@@ -15,8 +16,8 @@ TEST(features_test, color_impl_when_current_is_black) {
     std::vector<float> expected_black(size * size, 1.0f);
     std::vector<float> expected_white(size * size, 0.0f);
 
-    ASSERT_EQ(expected_black, color_impl<float>(s, Color::BLACK));
-    ASSERT_EQ(expected_white, color_impl<float>(s, Color::WHITE));
+    ASSERT_EQ(expected_black, color<float>(s, Color::BLACK));
+    ASSERT_EQ(expected_white, color<float>(s, Color::WHITE));
 }
 
 TEST(features_test, color_impl_when_current_is_white) {
@@ -31,8 +32,8 @@ TEST(features_test, color_impl_when_current_is_white) {
     std::vector<float> expected_black(size * size, 0.0f);
     std::vector<float> expected_white(size * size, 1.0f);
 
-    ASSERT_EQ(expected_black, color_impl<float>(s, Color::BLACK));
-    ASSERT_EQ(expected_white, color_impl<float>(s, Color::WHITE));
+    ASSERT_EQ(expected_black, color<float>(s, Color::BLACK));
+    ASSERT_EQ(expected_white, color<float>(s, Color::WHITE));
 }
 
 TEST(features_test, board_i_color_impl) {
@@ -40,8 +41,8 @@ TEST(features_test, board_i_color_impl) {
 
     State s(size, 7.5, false, 10);
 
-    ASSERT_EQ(std::vector<float>(size * size, 0.0f), board_i_color_impl<float>(s, 0, Color::BLACK));
-    ASSERT_EQ(std::vector<float>(size * size, 0.0f), board_i_color_impl<float>(s, 0, Color::WHITE));
+    ASSERT_EQ(std::vector<float>(size * size, 0.0f), board_i_color<float>(s, 0, Color::BLACK));
+    ASSERT_EQ(std::vector<float>(size * size, 0.0f), board_i_color<float>(s, 0, Color::WHITE));
 
     s.make_move(Move::from_raw(0, size));
 
@@ -57,5 +58,5 @@ TEST(features_test, board_i_color_impl) {
             0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f,
     };
 
-    ASSERT_EQ(expected_black, board_i_color_impl<float>(s, 0, Color::BLACK));
+    ASSERT_EQ(expected_black, board_i_color<float>(s, 0, Color::BLACK));
 }

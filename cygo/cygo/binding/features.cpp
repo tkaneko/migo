@@ -28,12 +28,12 @@ T* to_ptr(std::vector<T> const& v) {
 }
 
 py::array_t<float> black(State const& state) {
-    return make_pyarray(to_ptr(color_impl<float>(state, Color::BLACK)),
+    return make_pyarray(to_ptr(feature_impl::color<float>(state, Color::BLACK)),
                         {1, state.board_size(), state.board_size()});
 }
 
 py::array_t<float> white(State const& state) {
-    return make_pyarray(to_ptr(color_impl<float>(state, Color::WHITE)),
+    return make_pyarray(to_ptr(feature_impl::color<float>(state, Color::WHITE)),
                         {1, state.board_size(), state.board_size()});
 }
 
@@ -49,11 +49,11 @@ py::array_t<float> board_i(State const& state, int i, Color c) {
     }
 
     if (c == Color::EMPTY) {
-        return make_pyarray(to_ptr(board_i_impl<float>(state, i)),
+        return make_pyarray(to_ptr(feature_impl::board_i<float>(state, i)),
                             {2, state.board_size(), state.board_size()});
     }
     else {
-        return make_pyarray(to_ptr(board_i_color_impl<float>(state, i, c)),
+        return make_pyarray(to_ptr(feature_impl::board_i_color<float>(state, i, c)),
                             {1, state.board_size(), state.board_size()});
     }
 }
@@ -69,11 +69,11 @@ py::array_t<float> history_n(State const& state, int n, Color c) {
     }
 
     if (c == Color::EMPTY) {
-        return make_pyarray(to_ptr(history_n_impl<float>(state, n)),
+        return make_pyarray(to_ptr(feature_impl::history_n<float>(state, n)),
                             {2 * (n + 1), state.board_size(), state.board_size()});
     }
     else {
-        return make_pyarray(to_ptr(history_n_color_impl<float>(state, n, c)),
+        return make_pyarray(to_ptr(feature_impl::history_n_color<float>(state, n, c)),
                             {n + 1, state.board_size(), state.board_size()});
     }
 }
