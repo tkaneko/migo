@@ -76,7 +76,7 @@ setup(
         CMakeExtension(
             name='cygo',
             build_targets=['cygo'],
-            sourcedir='cygo'
+            sourcedir='cygo_cc'
         )
     ],
     cmdclass={
