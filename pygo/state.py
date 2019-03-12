@@ -11,7 +11,7 @@ from pygo.misc import all_coordinates, Color, Coord, Move, IllegalMoveError, Pas
 
 
 class State:
-    def __init__(self, board_size: int = 19, komi: float = 7.5, superko_rule=True, history_buffer_len=8):
+    def __init__(self, board_size: int = 19, komi: float = 7.5, superko_rule=True, max_history_n=7):
         self.neighbor_table = NeighborTable(size=board_size)
 
         self.__legal_moves_cache = None  # type: Set[Coord]
@@ -43,14 +43,14 @@ class State:
         self.stone_ages = np.zeros((board_size, board_size), dtype=np.int)
         self.stone_ages.fill(-1)
 
-        self.history_buffer_len = history_buffer_len
+        self.max_history_n = max_history_n
         self.history_buffer = []  # type: List[np.ndarray]
 
     def copy(self):
         other = State(board_size=self.board_size,
                       komi=self.komi,
                       superko_rule=self.superko_rule,
-                      history_buffer_len=self.history_buffer_len)
+                      max_history_n=self.max_history_n)
 
         other.ko = self.ko
         other.is_game_over = self.is_game_over
@@ -69,7 +69,7 @@ class State:
         other.liberty_counts = self.liberty_counts.copy()
         other.stone_ages = self.stone_ages.copy()
 
-        other.history_buffer_len = self.history_buffer_len
+        other.max_history_n = self.max_history_n
         other.history_buffer = self.history_buffer.copy()
 
         return other
@@ -93,7 +93,7 @@ class State:
         else:
             raise IllegalMoveError("Expected tuple, int, or str but got `%s`" % type(action))
 
-        if self.history_buffer_len <= 0:
+        if self.max_history_n <= 0:
             return self.__make_move_impl(action, color)
 
         board = self.board.copy()
@@ -102,7 +102,7 @@ class State:
 
         self.history_buffer.append(board)
 
-        while len(self.history_buffer) > self.history_buffer_len:
+        while len(self.history_buffer) > self.max_history_n:
             self.history_buffer.pop(0)
 
         return ret

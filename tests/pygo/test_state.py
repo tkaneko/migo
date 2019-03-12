@@ -482,18 +482,18 @@ class TestLadder:
 class TestHistory:
     def test_history(self):
         size = 3
-        state = State(board_size=size, history_buffer_len=10)
+        state = State(board_size=size, max_history_n=10)
 
         expected_boards = [
+            np.array([[+0, +0, +0],
+                      [+0, +0, +0],
+                      [+0, +0, +0]]),
             np.array([[+1, +0, +0],
                       [+0, +0, +0],
                       [+0, +0, +0]]),
             np.array([[+1, -1, +0],
                       [+0, +0, +0],
                       [+0, +0, +0]]),
-            np.array([[+1, -1, +1],
-                      [+0, +0, +0],
-                      [+0, +0, +0]])
         ]
 
         state.make_move((0, 0))
@@ -508,7 +508,7 @@ class TestHistory:
 
     def test_history_pop(self):
         size = 3
-        state = State(board_size=size, history_buffer_len=3)
+        state = State(board_size=size, max_history_n=3)
 
         expected_boards = [
             np.array([[+1, +0, +0],
@@ -525,6 +525,7 @@ class TestHistory:
         state.make_move((0, 0))
         state.make_move((0, 1))
         state.make_move((0, 2))
+        state.make_move((2, 2))
 
         assert len(state.history_buffer) == 3
 
@@ -534,7 +535,7 @@ class TestHistory:
 
     def test_history_no_history(self):
         size = 3
-        state = State(board_size=size, history_buffer_len=0)
+        state = State(board_size=size, max_history_n=0)
 
         assert len(state.history_buffer) == 0
 
