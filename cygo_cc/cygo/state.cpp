@@ -1,3 +1,4 @@
+#include <cassert>
 #include <memory>
 #include <sstream>
 
