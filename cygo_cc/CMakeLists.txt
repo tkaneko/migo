@@ -27,6 +27,7 @@ add_subdirectory(${CMAKE_BINARY_DIR}/pybind11 ${CMAKE_CURRENT_BINARY_DIR}/pybind
 if(${CYGO_ENABLE_TESTING})
     message(STATUS "Test enabled")
     include(cmake/gtest.cmake)
+    enable_testing()
 endif()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})

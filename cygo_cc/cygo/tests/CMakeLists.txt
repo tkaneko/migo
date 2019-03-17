@@ -15,8 +15,6 @@ if(${CYGO_ENABLE_TESTING})
     include_directories(${GOOGLETEST_INCLUDE_DIR})
     link_directories(${GOOGLETEST_LIBRARY_DIR})
 
-    enable_testing()
-
     add_executable(${test_name} ${srcs})
 
     add_dependencies(${test_name} cygo-core)

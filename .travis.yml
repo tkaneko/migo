@@ -1,0 +1,16 @@
+language: cpp
+dist: xenial
+
+compiler:
+  - gcc
+  - clang
+
+before_script:
+  - pyenv global system 3.7.1
+
+script:
+  - mkdir -p build
+  - cd build
+  - cmake -DCMAKE_CXX_COMPILER=$CXX_FOR_BUILD -DCYGO_ENABLE_TESTING=1 ../cygo_cc
+  - cmake --build . -j 2
+  - ctest
