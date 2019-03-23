@@ -215,6 +215,12 @@ void setup_attributes(py::module& m) {
           "state"_a, "moves"_a
     );
 
+    m.def("zobrist_hash",
+          &cygo::zobrist_hash,
+          "Calculate zobrist hash for a given position represented by two ndarrays",
+          "black_array"_a, "white_array"_a
+    );
+
     m.def("opposite_color",
           &cygo::opposite_color,
           "Return the opposite color of a given color",
