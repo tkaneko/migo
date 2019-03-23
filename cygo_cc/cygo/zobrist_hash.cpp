@@ -6,11 +6,9 @@
 
 namespace cygo {
 
-constexpr std::size_t MAX_SIZE = 25 * 25;
-
-std::array<std::uint64_t, MAX_SIZE> generate_hash_table(std::uint_fast64_t seed) {
+std::array<ZobristHash::ValueType, ZobristHash::MAX_SIZE> generate_hash_table(std::uint_fast64_t seed) {
     std::mt19937_64 engine(seed);
-    std::array<std::uint64_t, MAX_SIZE> ret;
+    std::array<ZobristHash::ValueType, ZobristHash::MAX_SIZE> ret = {};
 
     for (auto& v : ret) {
         v = engine();
@@ -19,10 +17,10 @@ std::array<std::uint64_t, MAX_SIZE> generate_hash_table(std::uint_fast64_t seed)
     return ret;
 };
 
-static std::array<std::uint_fast64_t, MAX_SIZE> black_table = generate_hash_table(0);
-static std::array<std::uint_fast64_t, MAX_SIZE> white_table = generate_hash_table(1);
+static std::array<ZobristHash::ValueType, ZobristHash::MAX_SIZE> black_table = generate_hash_table(0);
+static std::array<ZobristHash::ValueType, ZobristHash::MAX_SIZE> white_table = generate_hash_table(1);
 
-ZobristHash::ZobristHash(std::uint_fast64_t initial_value) : hash_value_(initial_value) { }
+ZobristHash::ZobristHash(ZobristHash::ValueType initial_value) : hash_value_(initial_value) { }
 
 void ZobristHash::update(Color c, Move const &v) {
     if (c == Color::BLACK) {
@@ -36,8 +34,23 @@ void ZobristHash::update(Color c, Move const &v) {
     }
 }
 
-std::uint_fast64_t ZobristHash::hash_value() const {
+ZobristHash::ValueType ZobristHash::hash_value() const {
     return hash_value_;
+}
+
+ZobristHash::ValueType ZobristHash::calculate_hash(std::vector<cygo::Move> const& blacks,
+                                                   std::vector<cygo::Move> const& whites) {
+    ZobristHash::ValueType hash = 0;
+
+    for (auto const& m : blacks) {
+        hash ^= black_table.at(m.raw());
+    }
+
+    for (auto const& m : whites) {
+        hash ^= white_table.at(m.raw());
+    }
+
+    return hash;
 }
 
 }  // namespace cygo

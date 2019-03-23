@@ -1,7 +1,7 @@
 #ifndef CYGO_ZOBRIST_HASH_HPP
 #define CYGO_ZOBRIST_HASH_HPP
 
-#include <cstdint>
+#include <random>
 
 #include "color.hpp"
 #include "move.hpp"
@@ -11,7 +11,8 @@ namespace cygo {
 
 class ZobristHash {
 public:
-    using ValueType = std::uint_fast64_t;
+    using ValueType = std::mt19937_64::result_type;
+    static constexpr std::size_t MAX_SIZE = 25 * 25;
 
 private:
     ValueType hash_value_;
@@ -22,6 +23,8 @@ public:
     void update(Color c, Move const& v);
 
     ValueType hash_value() const;
+
+    static ValueType calculate_hash(std::vector<Move> const& blacks, std::vector<Move> const& whites);
 };
 
 }  // namespace cygo
