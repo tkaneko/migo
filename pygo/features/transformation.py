@@ -1,3 +1,5 @@
+from collections import OrderedDict
+from enum import Enum, auto
 from typing import Generator, Tuple
 
 import numpy as np
@@ -21,6 +23,17 @@ class TransformationFunction:
     @property
     def order(self):
         return self._order
+
+
+class Dihedral8(Enum):
+    IDENTICAL = auto()
+    ROTATE_90 = auto()
+    ROTATE_180 = auto()
+    ROTATE_270 = auto()
+    FLIP_UD = auto()
+    FLIP_LR = auto()
+    DIAG_LEFT_DOWN = auto()
+    DIAG_RIGHT_DOWN = auto()
 
 
 def _th_rotate_90(planes):
@@ -96,6 +109,18 @@ class THTransformation:
     ALL = [identity, rotate_90, rotate_180, fliplr, flipud, diagonal_left_down, diagonal_right_down]
 
 
+TH_TRANSFORMATIONS = OrderedDict({
+    Dihedral8.IDENTICAL: THTransformation.identity,
+    Dihedral8.ROTATE_90: THTransformation.rotate_90,
+    Dihedral8.ROTATE_180: THTransformation.rotate_180,
+    Dihedral8.ROTATE_270: THTransformation.rotate_270,
+    Dihedral8.FLIP_UD: THTransformation.flipud,
+    Dihedral8.FLIP_LR: THTransformation.fliplr,
+    Dihedral8.DIAG_LEFT_DOWN: THTransformation.diagonal_left_down,
+    Dihedral8.DIAG_RIGHT_DOWN: THTransformation.diagonal_right_down
+})
+
+
 class TFTransformation:
     """
     Expects tensors' shapes are (row, col, channels)
@@ -111,6 +136,18 @@ class TFTransformation:
     diagonal_right_down = TransformationFunction(f=_tf_diagonal_right_down, inv=_tf_diagonal_right_down, order=Order.TF)
 
     ALL = [identity, rotate_90, rotate_180, fliplr, flipud, diagonal_left_down, diagonal_right_down]
+
+
+TF_TRANSFORMATIONS = OrderedDict({
+    Dihedral8.IDENTICAL: TFTransformation.identity,
+    Dihedral8.ROTATE_90: TFTransformation.rotate_90,
+    Dihedral8.ROTATE_180: TFTransformation.rotate_180,
+    Dihedral8.ROTATE_270: TFTransformation.rotate_270,
+    Dihedral8.FLIP_UD: TFTransformation.flipud,
+    Dihedral8.FLIP_LR: TFTransformation.fliplr,
+    Dihedral8.DIAG_LEFT_DOWN: TFTransformation.diagonal_left_down,
+    Dihedral8.DIAG_RIGHT_DOWN: TFTransformation.diagonal_right_down
+})
 
 
 def index_to_onehot(action: int, board_size: int) -> np.ndarray:
@@ -139,33 +176,43 @@ def transform_index(action: int, f: TransformationFunction, board_size: int) -> 
     return onehot_to_index(action_plane, board_size)
 
 
-def transformation_functions(order=Order.TH) -> Generator[TransformationFunction, None, None]:
-    transformations = THTransformation.ALL if order == Order.TH else TFTransformation.ALL
+def transformation_functions(order: Order) -> Generator[Tuple[Dihedral8, TransformationFunction], None, None]:
+    transformations = TH_TRANSFORMATIONS if order == Order.TH else TF_TRANSFORMATIONS
 
-    for f in transformations:
-        yield f
-
-
-def identical_transform_function(order=Order.TH) -> TransformationFunction:
-    return THTransformation.identity if order == Order.TH else TFTransformation.identity
+    for d, f in transformations.items():
+        yield d, f
 
 
-def random_transform_function(order: Order, random_state=None) -> TransformationFunction:
+def identical_transform_function(order: Order) -> Tuple[Dihedral8, TransformationFunction]:
+    if order == Order.TH:
+        return Dihedral8.IDENTICAL, THTransformation.identity
+    else:
+        return Dihedral8.IDENTICAL, TFTransformation.identity
+
+
+def random_transform_function(order: Order, random_state=None) -> Tuple[Dihedral8, TransformationFunction]:
     random_state = random_state or np.random
 
-    transformations = THTransformation.ALL if order == Order.TH else TFTransformation.ALL
+    transformations = TH_TRANSFORMATIONS if order == Order.TH else TF_TRANSFORMATIONS
 
-    return random_state.choice(transformations)
+    dihedral = random_state.choice([Dihedral8.IDENTICAL,
+                                    Dihedral8.ROTATE_90,
+                                    Dihedral8.ROTATE_180,
+                                    Dihedral8.ROTATE_270,
+                                    Dihedral8.FLIP_UD,
+                                    Dihedral8.FLIP_LR,
+                                    Dihedral8.DIAG_LEFT_DOWN,
+                                    Dihedral8.DIAG_RIGHT_DOWN])
+
+    return dihedral, transformations[dihedral]
 
 
-def identical_transform_generator(order=Order.TH) -> Generator[TransformationFunction, None, None]:
-    f = THTransformation.identity if order == Order.TH else TFTransformation.identity
-
+def identical_transform_generator(order: Order) -> Generator[Tuple[Dihedral8, TransformationFunction], None, None]:
     while True:
-        yield f
+        yield identical_transform_function(order)
 
 
-def random_transform_generator(order=Order.TH) -> Generator[TransformationFunction, None, None]:
+def random_transform_generator(order: Order) -> Generator[Tuple[Dihedral8, TransformationFunction], None, None]:
     while True:
         yield random_transform_function(order)
 
