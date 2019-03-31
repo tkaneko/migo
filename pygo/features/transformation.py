@@ -35,6 +35,16 @@ class Dihedral8(Enum):
     DIAG_LEFT_DOWN = auto()
     DIAG_RIGHT_DOWN = auto()
 
+    def inverse(self):
+        if self == Dihedral8.ROTATE_90:
+            return Dihedral8.ROTATE_270
+        if self == Dihedral8.ROTATE_180:
+            return Dihedral8.ROTATE_180
+        if self == Dihedral8.ROTATE_270:
+            return Dihedral8.ROTATE_90
+
+        return self
+
 
 def _th_rotate_90(planes):
     return np.rot90(planes, axes=(1, 2), k=1)
