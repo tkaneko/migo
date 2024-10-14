@@ -33,6 +33,7 @@ class ZobristHash:
 
     @property
     def value(self) -> np.uint64:
+        """hash value in np.uint64"""
         return self._hash_value
 
     def __str__(self):

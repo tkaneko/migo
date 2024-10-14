@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+"""manage pygo neural networks"""
+import pygo.utility.model
+
+if __name__ == '__main__':
+    pygo.utility.model.main()

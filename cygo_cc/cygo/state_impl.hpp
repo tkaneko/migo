@@ -47,8 +47,9 @@ private:
     Move ko_vertex_;
     std::map<Color, Move> last_plays_;
 
-    std::map<Color, std::vector<Move>> move_history_;
+    std::map<Color, std::vector<Move>> color_move_history_;
     std::unordered_set<ZobristHash::ValueType> hash_history_;
+    std::vector<Move> move_history_;
 };
 
 }  // namespace cygo

@@ -107,14 +107,14 @@ class THTransformation:
     Expects tensors' shapes are (channels, row, col)
     """
 
-    identity = TransformationFunction(f=lambda x: x, inv=lambda x: x, order=Order.TH)
-    rotate_90 = TransformationFunction(f=_th_rotate_90, inv=_th_rotate_270, order=Order.TH)
-    rotate_180 = TransformationFunction(f=_th_rotate_180, inv=_th_rotate_180, order=Order.TH)
-    rotate_270 = TransformationFunction(f=_th_rotate_270, inv=_th_rotate_90, order=Order.TH)
-    fliplr = TransformationFunction(f=_th_fliplr, inv=_th_fliplr, order=Order.TH)
-    flipud = TransformationFunction(f=_th_flipud, inv=_th_flipud, order=Order.TH)
-    diagonal_left_down = TransformationFunction(f=_th_diagonal_left_down, inv=_th_diagonal_left_down, order=Order.TH)
-    diagonal_right_down = TransformationFunction(f=_th_diagonal_right_down, inv=_th_diagonal_right_down, order=Order.TH)
+    identity = TransformationFunction(f=lambda x: x, inv=lambda x: x, order=Order.CHW)
+    rotate_90 = TransformationFunction(f=_th_rotate_90, inv=_th_rotate_270, order=Order.CHW)
+    rotate_180 = TransformationFunction(f=_th_rotate_180, inv=_th_rotate_180, order=Order.CHW)
+    rotate_270 = TransformationFunction(f=_th_rotate_270, inv=_th_rotate_90, order=Order.CHW)
+    fliplr = TransformationFunction(f=_th_fliplr, inv=_th_fliplr, order=Order.CHW)
+    flipud = TransformationFunction(f=_th_flipud, inv=_th_flipud, order=Order.CHW)
+    diagonal_left_down = TransformationFunction(f=_th_diagonal_left_down, inv=_th_diagonal_left_down, order=Order.CHW)
+    diagonal_right_down = TransformationFunction(f=_th_diagonal_right_down, inv=_th_diagonal_right_down, order=Order.CHW)
 
     ALL = [identity, rotate_90, rotate_180, fliplr, flipud, diagonal_left_down, diagonal_right_down]
 
@@ -136,14 +136,14 @@ class TFTransformation:
     Expects tensors' shapes are (row, col, channels)
     """
 
-    identity = TransformationFunction(f=lambda x: x, inv=lambda x: x, order=Order.TF)
-    rotate_90 = TransformationFunction(f=_tf_rotate_90, inv=_tf_rotate_270, order=Order.TF)
-    rotate_180 = TransformationFunction(f=_tf_rotate_180, inv=_tf_rotate_180, order=Order.TF)
-    rotate_270 = TransformationFunction(f=_tf_rotate_270, inv=_tf_rotate_90, order=Order.TF)
-    fliplr = TransformationFunction(f=_tf_fliplr, inv=_tf_fliplr, order=Order.TF)
-    flipud = TransformationFunction(f=_tf_flipud, inv=_tf_flipud, order=Order.TF)
-    diagonal_left_down = TransformationFunction(f=_tf_diagonal_left_down, inv=_tf_diagonal_left_down, order=Order.TF)
-    diagonal_right_down = TransformationFunction(f=_tf_diagonal_right_down, inv=_tf_diagonal_right_down, order=Order.TF)
+    identity = TransformationFunction(f=lambda x: x, inv=lambda x: x, order=Order.HWC)
+    rotate_90 = TransformationFunction(f=_tf_rotate_90, inv=_tf_rotate_270, order=Order.HWC)
+    rotate_180 = TransformationFunction(f=_tf_rotate_180, inv=_tf_rotate_180, order=Order.HWC)
+    rotate_270 = TransformationFunction(f=_tf_rotate_270, inv=_tf_rotate_90, order=Order.HWC)
+    fliplr = TransformationFunction(f=_tf_fliplr, inv=_tf_fliplr, order=Order.HWC)
+    flipud = TransformationFunction(f=_tf_flipud, inv=_tf_flipud, order=Order.HWC)
+    diagonal_left_down = TransformationFunction(f=_tf_diagonal_left_down, inv=_tf_diagonal_left_down, order=Order.HWC)
+    diagonal_right_down = TransformationFunction(f=_tf_diagonal_right_down, inv=_tf_diagonal_right_down, order=Order.HWC)
 
     ALL = [identity, rotate_90, rotate_180, fliplr, flipud, diagonal_left_down, diagonal_right_down]
 
@@ -178,7 +178,7 @@ def transform_index(action: int, f: TransformationFunction, board_size: int) -> 
 
     action_plane = index_to_onehot(action, board_size)
 
-    if f.order == Order.TH:
+    if f.order == Order.CHW:
         action_plane = f(action_plane.reshape((1, board_size, board_size)))
     else:
         action_plane = f(action_plane.reshape((board_size, board_size, 1)))
@@ -187,14 +187,14 @@ def transform_index(action: int, f: TransformationFunction, board_size: int) -> 
 
 
 def transformation_functions(order: Order) -> Generator[Tuple[Dihedral8, TransformationFunction], None, None]:
-    transformations = TH_TRANSFORMATIONS if order == Order.TH else TF_TRANSFORMATIONS
+    transformations = TH_TRANSFORMATIONS if order == Order.CHW else TF_TRANSFORMATIONS
 
     for d, f in transformations.items():
         yield d, f
 
 
 def identical_transform_function(order: Order) -> Tuple[Dihedral8, TransformationFunction]:
-    if order == Order.TH:
+    if order == Order.CHW:
         return Dihedral8.IDENTICAL, THTransformation.identity
     else:
         return Dihedral8.IDENTICAL, TFTransformation.identity
@@ -203,7 +203,7 @@ def identical_transform_function(order: Order) -> Tuple[Dihedral8, Transformatio
 def random_transform_function(order: Order, random_state=None) -> Tuple[Dihedral8, TransformationFunction]:
     random_state = random_state or np.random
 
-    transformations = TH_TRANSFORMATIONS if order == Order.TH else TF_TRANSFORMATIONS
+    transformations = TH_TRANSFORMATIONS if order == Order.CHW else TF_TRANSFORMATIONS
 
     dihedral = random_state.choice([Dihedral8.IDENTICAL,
                                     Dihedral8.ROTATE_90,

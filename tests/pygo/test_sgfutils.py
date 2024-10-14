@@ -2,7 +2,9 @@ import pytest
 
 import cygo
 import pygo
-from pygo.sgfutils import SgfColor, SgfContentError, parse_sgf_move, parse_sgf_result, sgf_generator
+
+from pygo.sgfutils import SgfColor, SgfContentError, parse_sgf_move, \
+    parse_sgf_result, sgf_generator
 
 
 class TestSgfParseSgfResult:
@@ -109,8 +111,9 @@ class TestSgfGenerator:
         assert score == 26
         assert comment == ''
 
-    def test_when_board_size_is_mismatch_then_raises_exception(self, sgf_string):
+    def test_when_board_size_is_mismatch_then_raises_exception(
+            self, sgf_string
+    ):
         with pytest.raises(SgfContentError):
             for _ in sgf_generator(sgf_string, board_size=19, go=None):
                 pass
-

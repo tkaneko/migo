@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+"""conduct selfplay"""
+import pygo.utility.selfplay
+
+if __name__ == '__main__':
+    pygo.utility.selfplay.main()

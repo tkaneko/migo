@@ -247,7 +247,7 @@ class TestKo:
             ". . B . . . . . .|"
             ". . B . . . . . .|"
             ". . . . . . . . .|",
-            next_color=Color.BLACK)
+            next_color=Color.BLACK, keep_history=True)
 
         expected_positional_superko_move = (4, 3)
 
@@ -542,3 +542,60 @@ class TestHistory:
         state.make_move((0, 0))
 
         assert len(state.history_buffer) == 0
+
+
+def test_many_eyes_like():
+    state, _ = parse(
+        "B B B B B B B B B|"
+        "B B B B B B B B B|"
+        "B B B B B B B B B|"
+        "B B B B B B B B B|"
+        "B B B B B B B B B|"
+        "B B B B B B B B B|"
+        "B B B B B B B B B|"
+        "B . B . B . B . B|"
+        ". B B B B B B B B|", next_color=Color.WHITE)
+    assert state.legal_moves() == set()
+
+    state, moves = parse(
+        ". B . B . B . B .|"
+        "B . B . B . B . B|"
+        ". B . B . B . B .|"
+        "B . B . B . B . B|"
+        ". B . B . B . B .|"
+        "B . B . B . B . B|"
+        ". B . B . B . B .|"
+        "B . B . B . B W a|"
+        ". B . B . B . B .|", next_color=Color.BLACK)
+    assert moves['a'] in state.legal_moves()
+
+
+def test_to_cygo():
+    state, _ = parse('. B . B|. B . B|. W W .|. . . .|')
+    cstate = state.to_cygo()
+    assert int(state.current_player) == int(cstate.current_player)
+
+    state, _ = parse('. B . B|. B . B|. W W .|. . . .|',
+                     next_color=Color.WHITE)
+    cstate = state.to_cygo()
+    assert int(state.current_player) == int(cstate.current_player)
+
+
+def test_consistent_with_cygo():
+    import cygo
+    import pygo
+    cs = cygo.State(4)
+    ps = pygo.State(4)
+    moves = [(1, 1), (1, 2), None, None, (2, 3)]
+    for m in moves:
+        cs.make_move(m)
+        ps.make_move(m)
+    ch = cs.move_history
+    ph = ps.move_history
+    assert len(ch) == len(ph)
+    for i in range(len(ch)):
+        cm, pm = ch[i], ph[i]
+        if pm is None:
+            assert cm.is_pass
+        else:
+            assert pm == (cm.row, cm.col)

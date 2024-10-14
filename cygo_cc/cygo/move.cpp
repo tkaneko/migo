@@ -9,6 +9,7 @@
 namespace cygo {
 
 static const std::string COLUMNS("ABCDEFGHJKLMNOPQRSTUVWXYZ");
+static const std::string COLUMNS_cgoban("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
 
 Move Move::ANY = Move(-1);
 Move Move::PASS = Move(-2);
@@ -44,13 +45,19 @@ Move Move::from_gtp_string(std::string const &str, int board_size) {
         return Move::PASS;
     }
 
+    if (s.size() == 2) {
+      auto col = COLUMNS_cgoban.find(s[0]), row = COLUMNS_cgoban.find(s[1]);
+      if (col != COLUMNS_cgoban.npos && row != COLUMNS_cgoban.npos)
+        return Move::from_coordinate(row, col, board_size);
+    }
+
     std::istringstream parser(s);
 
     char col;
     int row;
 
     if (!(parser >> col >> row)) {
-        throw std::invalid_argument("Invalid GTP string");
+        throw std::invalid_argument("Invalid GTP string " + s);
     }
 
     return Move::from_coordinate(row - 1, COLUMNS.find(col), board_size);

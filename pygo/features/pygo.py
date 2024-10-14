@@ -1,13 +1,14 @@
 import numpy as np
 
 from pygo import State, Color
-from pygo.features.utils import Order, concatenate_along, empty_planes, one_planes, zero_planes
+from .utils import Order, concatenate_along, empty_planes, \
+    one_planes, zero_planes
 
 
-def board(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
+def board(state: State, order=Order.CHW, dtype=np.float32) -> np.ndarray:
     planes = zero_planes(2, state.board_size, order, dtype=dtype)
 
-    if order == Order.TH:
+    if order == Order.CHW:
         planes[0, :, :] = state.board == state.current_player
         planes[1, :, :] = state.board == state.current_player.opponent()
 
@@ -18,7 +19,8 @@ def board(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
     return planes
 
 
-def board_i(state: State, i: int, order=Order.TH, dtype=np.float32) -> np.ndarray:
+def board_i(state: State, i: int, order=Order.CHW, dtype=np.float32
+            ) -> np.ndarray:
     assert i <= state.max_history_n
 
     if i == 0:
@@ -30,7 +32,7 @@ def board_i(state: State, i: int, order=Order.TH, dtype=np.float32) -> np.ndarra
     planes = zero_planes(2, state.board_size, order, dtype=dtype)
     history_board = state.history_buffer[-i]
 
-    if order == Order.TH:
+    if order == Order.CHW:
         planes[0, :, :] = history_board == state.current_player
         planes[1, :, :] = history_board == state.current_player.opponent()
     else:
@@ -40,28 +42,31 @@ def board_i(state: State, i: int, order=Order.TH, dtype=np.float32) -> np.ndarra
     return planes
 
 
-def history_n(state: State, n: int, order=Order.TH, dtype=np.float32) -> np.ndarray:
+def history_n(state: State, n: int, order=Order.CHW, dtype=np.float32
+              ) -> np.ndarray:
     assert n >= 0
 
-    boards = [board_i(state, i, order, dtype) for i in range(n)]
+    boards = [board_i(state, i, order, dtype) for i in range(n+1)]
 
     return concatenate_along(order, boards)
 
 
-def color(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
+def color(state: State, order=Order.CHW, dtype=np.float32) -> np.ndarray:
     return color_black(state, order, dtype)
 
 
-def color_black(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
-    return one_planes(1, state.board_size, order, dtype) * (state.current_player == Color.BLACK)
+def color_black(state: State, order=Order.CHW, dtype=np.float32) -> np.ndarray:
+    return one_planes(1, state.board_size, order, dtype) \
+        * (state.current_player == Color.BLACK)
 
 
-def color_while(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
-    return one_planes(1, state.board_size, order, dtype) * (state.current_player == Color.WHITE)
+def color_white(state: State, order=Order.CHW, dtype=np.float32) -> np.ndarray:
+    return one_planes(1, state.board_size, order, dtype) \
+        * (state.current_player == Color.WHITE)
 
 
-def stone_color(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
-    if order == Order.TH:
+def stone_color(state: State, order=Order.CHW, dtype=np.float32) -> np.ndarray:
+    if order == Order.CHW:
         planes = np.zeros((3, state.board_size, state.board_size), dtype=dtype)
 
         planes[0, :, :] = state.board == state.current_player
@@ -69,7 +74,8 @@ def stone_color(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
         planes[2, :, :] = state.board == Color.EMPTY
 
     else:
-        planes = np.zeros((state.board_size, state.board_size, 3), dtype=np.float32)
+        planes = np.zeros((state.board_size, state.board_size, 3),
+                          dtype=np.float32)
 
         planes[:, :, 0] = state.board == state.current_player
         planes[:, :, 1] = state.board == state.current_player.opponent()
@@ -78,9 +84,11 @@ def stone_color(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
     return planes
 
 
-def turns_since(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) -> np.ndarray:
-    if order == Order.TH:
-        planes = np.zeros((nb_planes, state.board_size, state.board_size), dtype=dtype)
+def turns_since(state: State, order=Order.CHW, nb_planes=8, dtype=np.float32
+                ) -> np.ndarray:
+    if order == Order.CHW:
+        planes = np.zeros((nb_planes, state.board_size, state.board_size),
+                          dtype=dtype)
 
         for i in range(nb_planes - 1):
             planes[i, state.stone_ages == i] = 1
@@ -88,7 +96,8 @@ def turns_since(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) -> 
         planes[nb_planes - 1, state.stone_ages >= nb_planes - 1] = 1
 
     else:
-        planes = np.zeros((state.board_size, state.board_size, nb_planes), dtype=dtype)
+        planes = np.zeros((state.board_size, state.board_size, nb_planes),
+                          dtype=dtype)
 
         for i in range(nb_planes - 1):
             planes[state.stone_ages == i, i] = 1
@@ -98,9 +107,11 @@ def turns_since(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) -> 
     return planes
 
 
-def liberties(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) -> np.ndarray:
-    if order == Order.TH:
-        planes = np.zeros((nb_planes, state.board_size, state.board_size), dtype=dtype)
+def liberties(state: State, order=Order.CHW, nb_planes=8, dtype=np.float32
+              ) -> np.ndarray:
+    if order == Order.CHW:
+        planes = np.zeros((nb_planes, state.board_size, state.board_size),
+                          dtype=dtype)
 
         for i in range(nb_planes):
             planes[i, state.liberty_counts == i + 1] = 1
@@ -108,7 +119,8 @@ def liberties(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) -> np
         planes[nb_planes - 1, state.liberty_counts >= nb_planes] = 1
 
     else:
-        planes = np.zeros((state.board_size, state.board_size, nb_planes), dtype=dtype)
+        planes = np.zeros((state.board_size, state.board_size, nb_planes),
+                          dtype=dtype)
 
         for i in range(nb_planes):
             planes[state.liberty_counts == i + 1, i] = 1
@@ -118,11 +130,14 @@ def liberties(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) -> np
     return planes
 
 
-def capture_size(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) -> np.ndarray:
-    if order == Order.TH:
-        planes = np.zeros((nb_planes, state.board_size, state.board_size), dtype=dtype)
+def capture_size(state: State, order=Order.CHW, nb_planes=8, dtype=np.float32
+                 ) -> np.ndarray:
+    if order == Order.CHW:
+        planes = np.zeros((nb_planes, state.board_size, state.board_size),
+                          dtype=dtype)
     else:
-        planes = np.zeros((state.board_size, state.board_size, nb_planes), dtype=dtype)
+        planes = np.zeros((state.board_size, state.board_size, nb_planes),
+                          dtype=dtype)
 
     for x, y in state.legal_moves():
         nb_captured = 0
@@ -130,12 +145,13 @@ def capture_size(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) ->
         for neighbors in state.groups_around_at((x, y)):
             neighbor = next(iter(neighbors))  # get an arbitrary stone in the 'neighbors'
 
-            if state.liberty_counts[neighbor] == 1 and state.board[neighbor] != state.current_player:
+            if state.liberty_counts[neighbor] == 1 \
+               and state.board[neighbor] != state.current_player:
                 # if the group has 1 liberty and the group is not my color,
                 # the group would be captured
                 nb_captured += len(state.groups[neighbor])
 
-        if order == Order.TH:
+        if order == Order.CHW:
             planes[min(nb_captured, nb_planes - 1), x, y] = 1
         else:
             planes[x, y, min(nb_captured, nb_planes - 1)] = 1
@@ -143,11 +159,14 @@ def capture_size(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) ->
     return planes
 
 
-def self_atari_size(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) -> np.ndarray:
-    if order == Order.TH:
-        planes = np.zeros((nb_planes, state.board_size, state.board_size), dtype=dtype)
+def self_atari_size(state: State, order=Order.CHW, nb_planes=8, dtype=np.float32
+                    ) -> np.ndarray:
+    if order == Order.CHW:
+        planes = np.zeros((nb_planes, state.board_size, state.board_size),
+                          dtype=dtype)
     else:
-        planes = np.zeros((state.board_size, state.board_size, nb_planes), dtype=dtype)
+        planes = np.zeros((state.board_size, state.board_size, nb_planes),
+                          dtype=dtype)
 
     for x, y in state.legal_moves():
         liberty_set_after = set(state.liberty_sets[(x, y)])
@@ -171,13 +190,14 @@ def self_atari_size(state: State, order=Order.TH, nb_planes=8, dtype=np.float32)
             for stone in group_after_move:
                 # if there are some groups that can be captured,
                 # the coordinates in which captured group was in can be new liberties of mine
-                liberty_set_after |= set(state.crosswise_neighbors_of(stone)) & captured_stones
+                liberty_set_after |= (set(state.crosswise_neighbors_of(stone))
+                                      & captured_stones)
 
         if (x, y) in liberty_set_after:
             liberty_set_after.remove((x, y))
 
         if len(liberty_set_after) == 1:
-            if order == Order.TH:
+            if order == Order.CHW:
                 planes[min(nb_planes - 1, len(group_after_move) - 1), x, y] = 1
             else:
                 planes[x, y, min(nb_planes - 1, len(group_after_move) - 1)] = 1
@@ -185,11 +205,14 @@ def self_atari_size(state: State, order=Order.TH, nb_planes=8, dtype=np.float32)
     return planes
 
 
-def liberties_after_move(state: State, order=Order.TH, nb_planes=8, dtype=np.float32) -> np.ndarray:
-    if order == Order.TH:
-        planes = np.zeros((nb_planes, state.board_size, state.board_size), dtype=dtype)
+def liberties_after_move(state: State, order=Order.CHW, nb_planes=8,
+                         dtype=np.float32) -> np.ndarray:
+    if order == Order.CHW:
+        planes = np.zeros((nb_planes, state.board_size, state.board_size),
+                          dtype=dtype)
     else:
-        planes = np.zeros((state.board_size, state.board_size, nb_planes), dtype=dtype)
+        planes = np.zeros((state.board_size, state.board_size, nb_planes),
+                          dtype=dtype)
 
     for x, y in state.legal_moves():
         liberty_set_after = set(state.liberty_sets[(x, y)])
@@ -208,12 +231,13 @@ def liberties_after_move(state: State, order=Order.TH, nb_planes=8, dtype=np.flo
 
         if captured_stones:
             for stone in group_after:
-                liberty_set_after |= set(state.crosswise_neighbors_of(stone)) & captured_stones
+                liberty_set_after |= (set(state.crosswise_neighbors_of(stone))
+                                      & captured_stones)
 
         if (x, y) in liberty_set_after:
             liberty_set_after.remove((x, y))
 
-        if order == Order.TH:
+        if order == Order.CHW:
             planes[min(nb_planes - 1, len(liberty_set_after) - 1), x, y] = 1
         else:
             planes[x, y, min(nb_planes - 1, len(liberty_set_after) - 1)] = 1
@@ -221,8 +245,9 @@ def liberties_after_move(state: State, order=Order.TH, nb_planes=8, dtype=np.flo
     return planes
 
 
-def ladder_capture(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
-    if order == Order.TH:
+def ladder_capture(state: State, order=Order.CHW, dtype=np.float32
+                   ) -> np.ndarray:
+    if order == Order.CHW:
         planes = np.zeros((1, state.board_size, state.board_size), dtype=dtype)
 
         for x, y in state.legal_moves():
@@ -236,8 +261,9 @@ def ladder_capture(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray
     return planes
 
 
-def ladder_escape(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
-    if order == Order.TH:
+def ladder_escape(state: State, order=Order.CHW, dtype=np.float32
+                  ) -> np.ndarray:
+    if order == Order.CHW:
         planes = np.zeros((1, state.board_size, state.board_size), dtype=dtype)
 
         for x, y in state.legal_moves():
@@ -251,8 +277,8 @@ def ladder_escape(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
     return planes
 
 
-def sensibleness(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
-    if order == Order.TH:
+def sensibleness(state: State, order=Order.CHW, dtype=np.float32) -> np.ndarray:
+    if order == Order.CHW:
         planes = np.zeros((1, state.board_size, state.board_size), dtype=dtype)
 
         for x, y in state.legal_moves(include_eyes=False):
@@ -267,12 +293,13 @@ def sensibleness(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
     return planes
 
 
-def leela_board(state: State, order=Order.TH, n=8, dtype=np.float32) -> np.ndarray:
+def leela_board(state: State, order=Order.CHW, n=8, dtype=np.float32
+                ) -> np.ndarray:
     assert n <= state.max_history_n
 
     def write(j, src, dst):
         k = n + j
-        if order == Order.TH:
+        if order == Order.CHW:
             dst[j, :, :] = src[0, :, :]
             dst[k, :, :] = src[1, :, :]
         else:
@@ -287,17 +314,21 @@ def leela_board(state: State, order=Order.TH, n=8, dtype=np.float32) -> np.ndarr
     return planes
 
 
-def leela_color(state: State, order=Order.TH, dtype=np.float32) -> np.ndarray:
-    if order == Order.TH:
+def leela_color(state: State, order=Order.CHW, dtype=np.float32) -> np.ndarray:
+    if order == Order.CHW:
         planes = np.empty((2, state.board_size, state.board_size), dtype=dtype)
 
-        planes[0, :, :] = one_planes(1, state.board_size, order, dtype) * (state.current_player == Color.BLACK)
-        planes[1, :, :] = one_planes(1, state.board_size, order, dtype) * (state.current_player == Color.WHITE)
+        planes[0, :, :] = one_planes(1, state.board_size, order, dtype) \
+            * (state.current_player == Color.BLACK)
+        planes[1, :, :] = one_planes(1, state.board_size, order, dtype) \
+            * (state.current_player == Color.WHITE)
 
     else:
         planes = np.empty((state.board_size, state.board_size, 2), dtype=dtype)
 
-        planes[:, :, 0] = one_planes(1, state.board_size, order, dtype) * (state.current_player == Color.BLACK)
-        planes[:, :, 1] = one_planes(1, state.board_size, order, dtype) * (state.current_player == Color.WHITE)
+        planes[:, :, 0] = one_planes(1, state.board_size, order, dtype) \
+            * (state.current_player == Color.BLACK)
+        planes[:, :, 1] = one_planes(1, state.board_size, order, dtype) \
+            * (state.current_player == Color.WHITE)
 
     return planes

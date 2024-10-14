@@ -1,12 +1,24 @@
+"""sgf related functions
+
+As `sgf` package has sufficient functionalities for input (e.g.,
+`sgf.parse(string)`) and outputs (`collection.output(file)`), this
+file provides supplementary staff specialized for go and simple game
+records without any branch.
+
+- base package https://github.com/jtauber/sgf
+- specifications https://red-bean.com/sgf/
+"""
+import sgf
+import recordclass
 import re
+import logging
 from enum import Enum
 from string import ascii_lowercase, ascii_uppercase
 from typing import Optional, Tuple, Dict, List, Union, Generator
 
-import sgf
 
-
-_SGF_SCORE_REGEX = re.compile(r'(((?P<color>[BW])\+(?P<score>(\d+|R)))|DRAW)', re.IGNORECASE)
+_SGF_SCORE_REGEX = re.compile(r'(((?P<color>[BW])\+(?P<score>(\d+|R)))|DRAW)',
+                              re.IGNORECASE)
 _SGF_MOVE_REGEX = re.compile(r'^[A-T]{2}$', re.IGNORECASE)
 
 
@@ -25,6 +37,15 @@ class SgfContentError(Exception):
 
 
 def move_to_sgf(move: Optional[Tuple[int, int]]) -> str:
+    """return sgf representation of Coord
+
+    >>> pygo.sgfutils.move_to_sgf((0, 0))
+    'aa'
+    >>> pygo.sgfutils.move_to_sgf((1, 2))
+    'bc'
+    >>> pygo.sgfutils.move_to_sgf(None)
+    'tt'
+    """
     if move is None:
         return 'tt'
 
@@ -82,6 +103,9 @@ def parse_sgf_result(score_str: str) -> Tuple[SgfColor, float]:
 
 def game_length(sgf_string: str) -> int:
     collection = sgf.parse(sgf_string)
+    if len(collection) != 1:
+        logging.warning(f'sgf_string contains {len(collection)} records')
+
     game = collection[0]
 
     if not game.rest:
@@ -96,7 +120,17 @@ def game_length(sgf_string: str) -> int:
 
 
 class SgfPrinter:
+    """incrementally output sgf by `add_node`
 
+    >>> out = io.StringIO()
+    >>> prt = pygo.sgfutils.SgfPrinter(out, size=4)
+    >>> _ = prt.open()
+    >>> prt.add_node({'B': 'a2'})
+    >>> prt.add_node({'W': '2c'})
+    >>> prt.close()
+    >>> print(out.getvalue())
+    (;FF[4]GM[1]SZ[4];B[a2];W[2c])
+    """
     def __init__(self, out, size, initial_props: Dict = None):
         self.parser = sgf.Parser()
         self.collection = sgf.Collection(self.parser)
@@ -110,6 +144,7 @@ class SgfPrinter:
         return self.open()
 
     def open(self):
+        """start and open a game tree"""
         self.parser.start_gametree()
         self.__add_initial_props()
 
@@ -119,11 +154,13 @@ class SgfPrinter:
         self.close()
 
     def close(self):
+        """close the game tree previously opened by open()"""
         self.parser.end_gametree()
 
         self.collection.output(self.out)
 
     def add_node(self, dic: Dict[str, Union[str, List[str]]]):
+        """add a node in the game tree"""
         self.parser.start_node()
 
         for key, value in dic.items():
@@ -156,8 +193,10 @@ class SgfPrinter:
 def _set_up_state(props: Dict[str, List[str]], board_size: int, go):
     try:
         size = int(props['SZ'][0])
-        assert size == board_size, "Expected in {e}x{e} but game was in {a}x{a}".format(a=size, e=board_size)
-
+        if board_size > 0:
+            assert size == board_size, "Expected in {e}x{e}" \
+                " but game was in {a}x{a}".format(a=size, e=board_size)
+        board_size = size
         komi = float(props['KM'][0])
 
     except (KeyError, AssertionError) as e:
@@ -173,31 +212,33 @@ def _set_up_state(props: Dict[str, List[str]], board_size: int, go):
     for move in props.get('AW', []):
         state.make_move(move, go.Color.WHITE)
 
-    state.current_player = go.Color.BLACK if start_player == 'B' else go.Color.WHITE
+    state.current_player = go.Color.BLACK if start_player == 'B' \
+        else go.Color.WHITE
 
     return state
 
 
-def sgf_generator(sgf_string: str, board_size: int, go, include_end=True) -> Generator[Tuple, None, None]:
+MoveRecord = recordclass.recordclass(
+    'MoveRecord', (
+        'move', 'player', 'comment'
+     ))
+
+
+def parse_one_game(sgf_string: str, board_size: int, go,
+                   *, allow_ongoing_game: bool = False):
+    """parse sgf to return initial state, moves, winner, score
+
+    :param board_size: expected board size or 0 (for any)
+    :param go: :py:mod:`pygo` or :py:mod:`cygo`
+    """
     collection = sgf.parse(sgf_string)
     game = collection[0]
 
     root_props = game.root.properties
 
-    state = _set_up_state(root_props, board_size, go)
+    initial_state = _set_up_state(root_props, board_size, go)
 
-    if 'RE' not in root_props:
-        raise SgfContentError("SGF file does not contain 'RE' property")
-
-    winner, score = parse_sgf_result(root_props['RE'][0])
-
-    if winner == SgfColor.BLACK:
-        winner = go.Color.BLACK
-    elif winner == SgfColor.WHITE:
-        winner = go.Color.WHITE
-    else:
-        winner = go.Color.EMPTY
-
+    moves = []
     for node in game.rest:
         props = node.properties
 
@@ -210,12 +251,38 @@ def sgf_generator(sgf_string: str, board_size: int, go, include_end=True) -> Gen
         else:
             raise SgfContentError("Found a node without move properties")
 
-        state.current_player = player
         comment = props.get('C', [''])[0]
+        moves.append(MoveRecord(move, player, comment))
 
-        yield state, move, winner, score, comment
+    if 'RE' not in root_props:
+        if allow_ongoing_game:
+            return initial_state, moves, go.Color.EMPTY, 0
+        raise SgfContentError("SGF file does not contain 'RE' property")
 
-        state.make_move(move)
+    winner, score = parse_sgf_result(root_props['RE'][0])
+
+    if winner == SgfColor.BLACK:
+        winner = go.Color.BLACK
+    elif winner == SgfColor.WHITE:
+        winner = go.Color.WHITE
+    else:
+        winner = go.Color.EMPTY
+
+    return initial_state, moves, winner, score
+
+
+def sgf_generator(sgf_string: str, board_size: int, go,
+                  include_end=True) -> Generator[Tuple, None, None]:
+    """make a generator yielding state, move, winner, score, comment
+
+    :param go: :py:mod:`pygo` or :py:mod:`cygo`
+    """
+    state, moves, winner, score = parse_one_game(sgf_string, board_size, go)
+    for move in moves:
+        state.current_player = move.player
+
+        yield state, move.move, winner, score, move.comment
+        state.make_move(move.move)
 
     if include_end:
         yield state, None, winner, score, ''

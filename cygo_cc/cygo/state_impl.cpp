@@ -20,6 +20,8 @@ void StateImpl::make_move(Color c, Move const &v) {
     last_plays_[c] = v;
 
     if (v == Move::PASS) {
+        color_move_history_[c].push_back(v);
+        move_history_.push_back(v);
         return;
     }
 
@@ -38,7 +40,8 @@ void StateImpl::make_move(Color c, Move const &v) {
     chain_group_.place_stone(c, v);
 
     hash_history_.emplace(chain_group_.hash());
-    move_history_[c].push_back(v);
+    color_move_history_[c].push_back(v);
+    move_history_.push_back(v);
 }
 
 std::unordered_set<Move> StateImpl::legal_moves(Color c, bool include_eye_likes) const {
@@ -62,11 +65,14 @@ ChainGroup const& StateImpl::chain_group() const {
 }
 
 std::vector<Move> StateImpl::move_history(Color c) const {
-    if (move_history_.count(c) == 0) {
+    if (c == Color::EMPTY)
+        return move_history_;
+    
+    if (color_move_history_.count(c) == 0) {
         return std::vector<Move>();
     }
 
-    return move_history_.at(c);
+    return color_move_history_.at(c);
 }
 
 bool StateImpl::is_legal(Color c, Move const& v) const {
@@ -104,13 +110,14 @@ bool StateImpl::is_suicide_move(Color c, Move const &v) const {
 }
 
 bool StateImpl::is_positional_superko(Color c, Move const& v) const {
-    if (move_history_.count(c) == 0) {
+    if (color_move_history_.count(c) == 0) {
         return false;
     }
 
-    auto const& move_history = move_history_.at(c);
+    auto const& move_history = color_move_history_.at(c);
 
-    if (std::find(std::begin(move_history), std::end(move_history), v) == std::end(move_history)) {
+    if (std::find(std::begin(move_history), std::end(move_history), v)
+        == std::end(move_history)) {
         return false;
     }
 

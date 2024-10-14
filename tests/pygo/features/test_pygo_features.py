@@ -19,7 +19,7 @@ class TestFeatures:
         expected_white = np.array([[0, 0, 0], [1, 1, 0], [0, 0, 0]])
         expected_empty = np.array([[0, 0, 0], [0, 0, 1], [1, 1, 1]])
 
-        planes = F.stone_color(state, order=Order.TF)
+        planes = F.stone_color(state, order=Order.HWC)
 
         assert planes.shape == (state.board_size, state.board_size, 3)
 
@@ -45,7 +45,7 @@ class TestFeatures:
         for move in all_coordinates(size=size):
             state.make_move(move, Color.BLACK)
 
-        planes = F.turns_since(state, order=Order.TF)
+        planes = F.turns_since(state, order=Order.HWC)
 
         assert planes.shape == (state.board_size, state.board_size, 8)
 
@@ -60,7 +60,7 @@ class TestFeatures:
         expected_plane1 = np.array([[1, 1, 1], [0, 0, 1], [0, 0, 1]])
         expected_plane2 = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]])
 
-        planes = F.liberties(state, order=Order.TF)
+        planes = F.liberties(state, order=Order.HWC)
 
         assert planes.shape == (state.board_size, state.board_size, 8)
 
@@ -101,7 +101,7 @@ class TestFeatures:
                       [0, 0, 0, 0, 0, 0]])
         ]
 
-        planes = F.capture_size(state, order=Order.TF)
+        planes = F.capture_size(state, order=Order.HWC)
 
         assert planes.shape == (state.board_size, state.board_size, 8)
 
@@ -142,7 +142,7 @@ class TestFeatures:
             np.zeros((6, 6)),
         ]
 
-        planes = F.self_atari_size(state, order=Order.TF)
+        planes = F.self_atari_size(state, order=Order.HWC)
 
         assert planes.shape == (state.board_size, state.board_size, 8)
 
@@ -223,7 +223,7 @@ class TestFeatures:
                       [0, 0, 0, 0, 1, 0]]),
         ]
 
-        planes = F.liberties_after_move(state, order=Order.TF)
+        planes = F.liberties_after_move(state, order=Order.HWC)
 
         assert planes.shape == (state.board_size, state.board_size, 8)
 
@@ -247,7 +247,7 @@ class TestFeatures:
             [1, 0, 0, 1, 1, 1]
         ])
 
-        plane = F.sensibleness(state, order=Order.TF)
+        plane = F.sensibleness(state, order=Order.HWC)
 
         assert plane.shape == (state.board_size, state.board_size, 1)
 
@@ -282,21 +282,21 @@ class TestHistoryFeature:
         assert state.current_player == Color.WHITE
         assert len(state.history_buffer) == 3
 
-        npt.assert_array_equal(expected_2, F.board_i(state, 2, order=Order.TH))
-        npt.assert_array_equal(expected_1, F.board_i(state, 1, order=Order.TH))
-        npt.assert_array_equal(expected_0, F.board_i(state, 0, order=Order.TH))
+        npt.assert_array_equal(expected_2, F.board_i(state, 2, order=Order.CHW))
+        npt.assert_array_equal(expected_1, F.board_i(state, 1, order=Order.CHW))
+        npt.assert_array_equal(expected_0, F.board_i(state, 0, order=Order.CHW))
 
         for n in range(3, 10):
-            npt.assert_array_equal(expected_outbound, F.board_i(state, n, order=Order.TH))
+            npt.assert_array_equal(expected_outbound, F.board_i(state, n, order=Order.CHW))
 
     def test_board_i_when_state_has_no_history(self):
         state = State(max_history_n=0)
 
         # with no exception when i = 0
-        F.board_i(state, i=0, order=Order.TF)
+        F.board_i(state, i=0, order=Order.HWC)
 
         with pytest.raises(AssertionError):
-            F.board_i(state, i=1, order=Order.TF)
+            F.board_i(state, i=1, order=Order.HWC)
 
 
 class TestLeelaFeature:
@@ -304,7 +304,7 @@ class TestLeelaFeature:
     def test_leela_board_initial_state(self):
         state = State(3, max_history_n=8)
 
-        npt.assert_equal(F.leela_board(state, order=Order.TH, n=2),
+        npt.assert_equal(F.leela_board(state, order=Order.CHW, n=2),
                          np.array([
                              [[0, 0, 0],
                               [0, 0, 0],
@@ -369,6 +369,6 @@ class TestLeelaFeature:
         )
 
         expected_planes = np.concatenate((expected_black_history, np.zeros((8, 3, 3))))
-        actual_planes = F.leela_board(state, Order.TH)
+        actual_planes = F.leela_board(state, Order.CHW)
 
         npt.assert_equal(expected_planes, actual_planes)
