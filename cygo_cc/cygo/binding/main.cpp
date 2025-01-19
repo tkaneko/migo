@@ -399,6 +399,10 @@ void setup_state(py::module& m) {
                  "Apply move to the state as color",
                  "move"_a, "color"_a = cygo::Color::EMPTY
             )
+            .def("drop_history",
+                 &cygo::State::drop_history,
+                 "drop history keeping current stones"
+            )
             .def("color_at",
                  [] (cygo::State& state, std::pair<int, int> const& v) {
                      const auto& stones = state.stones();

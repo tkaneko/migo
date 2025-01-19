@@ -2,7 +2,7 @@ import io
 
 import pytest
 
-from pygo.gtp import GTPRuntimeError, GTPRunner, Status
+from migo.gtp import GTPRuntimeError, GTPRunner, Status
 
 
 class TestGTPRunner:

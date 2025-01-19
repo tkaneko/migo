@@ -6,10 +6,10 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'pygo'
-copyright = '2024, games-research-komaba'
+project = 'migo'
+copyright = '2024-2025, games-research-komaba'
 author = 'games-research-komaba'
-release = 'r0-1-2'
+release = 'r0-1-3'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -32,7 +32,7 @@ breathe_domain_by_extension = {
 }
 breathe_show_enumvalue_initializer = True
 
-doctest_global_setup = 'import pygo, pygo.sgfutils, cygo, pygo.features, pygo.drawing, pygo.record, io'
+doctest_global_setup = 'import migo, migo.sgfutils, cygo, migo.features, migo.drawing, migo.record, io'
 
 templates_path = ['_templates']
 exclude_patterns = []

@@ -2,8 +2,8 @@ import random
 
 import pytest
 
-from pygo import Color, all_coordinates
-from pygo.hash import ZobristHash, NeighborTable
+from migo import Color, all_coordinates
+from migo.hash import ZobristHash, NeighborTable
 
 
 @pytest.mark.parametrize("color", [Color.BLACK, Color.WHITE])

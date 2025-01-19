@@ -17,7 +17,6 @@ StateImpl::StateImpl(int board_size, bool superko_rule) :
 
 void StateImpl::make_move(Color c, Move const &v) {
     ko_vertex_ = Move::ANY;
-    last_plays_[c] = v;
 
     if (v == Move::PASS) {
         color_move_history_[c].push_back(v);
@@ -39,9 +38,17 @@ void StateImpl::make_move(Color c, Move const &v) {
 
     chain_group_.place_stone(c, v);
 
-    hash_history_.emplace(chain_group_.hash());
+    hash_history_.emplace(chain_group_.hash(), move_history_.size());
     color_move_history_[c].push_back(v);
     move_history_.push_back(v);
+}
+
+void StateImpl::drop_history() {
+    hash_history_.clear();
+    color_move_history_[Color::BLACK].clear();
+    color_move_history_[Color::WHITE].clear();
+    move_history_.clear();  
+    ko_vertex_ = Move::ANY;
 }
 
 std::unordered_set<Move> StateImpl::legal_moves(Color c, bool include_eye_likes) const {
@@ -75,21 +82,29 @@ std::vector<Move> StateImpl::move_history(Color c) const {
     return color_move_history_.at(c);
 }
 
-bool StateImpl::is_legal(Color c, Move const& v) const {
+bool StateImpl::is_legal(Color c, Move const& v, std::string *msg) const {
     if (v == Move::PASS) {
         return true;
     }
     if (chain_group_.stone_at(v) != Color::EMPTY) {
+        if (msg)
+            *msg = "vertex not empty";
         return false;
     }
     if (v == ko_vertex_) {
+        if (msg)
+            *msg = "ko vertex";
         return false;
     }
     if (is_suicide_move(c, v)) {
+        if (msg)
+            *msg = "suicide vertex";
         return false;
     }
 
-    return not superko_rule_ or not is_positional_superko(c, v);
+    if (not superko_rule_)
+        return true;
+    return not is_positional_superko(c, v, msg);
 }
 
 bool StateImpl::is_suicide_move(Color c, Move const &v) const {
@@ -109,7 +124,7 @@ bool StateImpl::is_suicide_move(Color c, Move const &v) const {
     return suicide_move;
 }
 
-bool StateImpl::is_positional_superko(Color c, Move const& v) const {
+bool StateImpl::is_positional_superko(Color c, Move const& v, std::string *msg) const {
     if (color_move_history_.count(c) == 0) {
         return false;
     }
@@ -125,7 +140,11 @@ bool StateImpl::is_positional_superko(Color c, Move const& v) const {
     copied.superko_rule_ = false;
     copied.make_move(c, v);
 
-    return hash_history_.count(copied.hash()) != 0;
+    auto p = hash_history_.find(copied.hash());
+    if (msg && p != hash_history_.end())
+        *msg = "positional superko to " + std::to_string(p->second);
+
+    return p != hash_history_.end();
 }
 
 int StateImpl::board_size() const {

@@ -2,7 +2,7 @@ import numpy as np
 import numpy.testing as npt
 
 from cygo import State, Color
-from pygo.features import cygo as F
+from migo.features import cygo as F
 
 
 class TestCyFeature:

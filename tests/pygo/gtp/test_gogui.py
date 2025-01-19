@@ -1,7 +1,7 @@
 import pytest
 
-from pygo.gtp import Status
-from pygo.gtp.gogui import GoGuiGTPRunner, CommandType, GoGuiParam, GoGuiParams
+from migo.gtp import Status
+from migo.gtp.gogui import GoGuiGTPRunner, CommandType, GoGuiParam, GoGuiParams
 
 
 class TestGoGuiGTPRunner:

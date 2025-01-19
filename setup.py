@@ -62,16 +62,16 @@ class CMakeBuild(build_ext):
 
 
 setup(
-    name='pygo',
-    version='0.1.2',
+    name='migo',
+    version='0.1.3',
     author='Tomoyuki Kaneko and Yusaku Mandai',
     author_email='kaneko@graco.c.u-tokyo.ac.jp',
     description='Library of the game of Go for Python',
     long_description='',
     packages=[
-        'pygo',
-        'pygo.features',
-        'pygo.gtp',
+        'migo',
+        'migo.features',
+        'migo.gtp',
     ],
     ext_modules=[
         CMakeExtension(

@@ -2,10 +2,10 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from pygo import State, Color, all_coordinates
-from pygo.features.utils import Order
-from pygo.features import pygo as F
-from pygo.state import parse
+from migo import State, Color, all_coordinates
+from migo.features.utils import Order
+from migo.features import migo as F
+from migo.state import parse
 
 
 class TestFeatures:

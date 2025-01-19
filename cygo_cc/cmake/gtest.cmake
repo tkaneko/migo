@@ -5,7 +5,7 @@ project(googletest-download NONE)
 include(ExternalProject)
 
 ExternalProject_Add(googletest
-    URL             https://github.com/google/googletest/archive/release-1.8.0.tar.gz
+    URL             https://github.com/google/googletest/archive/refs/tags/release-1.8.1.tar.gz
     CMAKE_ARGS      -Dgtest_force_shared_crt=ON
     PREFIX          ${CMAKE_CURRENT_BINARY_DIR}/gtest
     INSTALL_COMMAND ""

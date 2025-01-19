@@ -1,4 +1,4 @@
-from pygo.gtp.gfx import GFX, GFXSymbol, GFXPlayer
+from migo.gtp.gfx import GFX, GFXSymbol, GFXPlayer
 
 
 class TestGFX:

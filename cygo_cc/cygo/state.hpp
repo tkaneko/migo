@@ -33,6 +33,11 @@ public:
     ~State();
 
     void make_move(Move const &move, Color player = Color::EMPTY);
+    /** drop history keeping current stones
+     * after this call, history(.).size() becomes (at most) 1, and
+     * move_history(.) becomes empty()
+     */
+    void drop_history();
 
     std::unordered_set<Move> legal_moves(Color c, bool include_eyeish = false) const;
 

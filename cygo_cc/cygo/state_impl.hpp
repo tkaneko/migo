@@ -1,16 +1,16 @@
 #ifndef CYGO_STATE_IMPL_HPP
 #define CYGO_STATE_IMPL_HPP
 
-#include <map>
-#include <unordered_set>
-#include <vector>
-
 #include "chain_group.hpp"
 #include "color.hpp"
 #include "neighbor_counter.hpp"
 #include "move.hpp"
 #include "zobrist_hash.hpp"
 
+#include <map>
+#include <unordered_set>
+#include <vector>
+#include <string>
 
 namespace cygo {
 
@@ -19,13 +19,14 @@ public:
     StateImpl(int board_size, bool superko_rule);
 
     void make_move(Color c, Move const& v);
+    void drop_history();
 
     std::unordered_set<Move> legal_moves(Color c, bool include_eye_likes) const;
 
     bool is_eye_like(Color c, Move const &v) const;
-    bool is_legal(Color c, Move const& v) const;
+    bool is_legal(Color c, Move const& v, std::string *msg=nullptr) const;
     bool is_suicide_move(Color c, Move const& v) const;
-    bool is_positional_superko(Color c, Move const& v) const;
+    bool is_positional_superko(Color c, Move const& v, std::string *err=nullptr) const;
 
     double tromp_taylor_score(Color c) const;
 
@@ -45,10 +46,9 @@ private:
     ChainGroup chain_group_;
 
     Move ko_vertex_;
-    std::map<Color, Move> last_plays_;
 
     std::map<Color, std::vector<Move>> color_move_history_;
-    std::unordered_set<ZobristHash::ValueType> hash_history_;
+    std::unordered_map<ZobristHash::ValueType, int> hash_history_;
     std::vector<Move> move_history_;
 };
 

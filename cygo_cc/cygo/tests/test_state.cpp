@@ -195,3 +195,34 @@ TEST(state_test, real_game_3) {
     ASSERT_EQ(black_board, s.black_board());
     ASSERT_EQ(white_board, s.white_board());
 }
+
+TEST(state_test, drop_history) {
+    State s(9, 7.5, false, 0);
+
+    auto moves = {
+            "D5", "C3", "E7", "F3", "G5", "E4", "C4", "B3", "G3", "G4",
+            "H4", "F4", "H2", "G2", "H3", "F6", "F5", "E5", "E6", "F7",
+            "G6", "E8", "D8", "C9", "F8", "D6", "D7", "C6", "C7", "B6",
+    };
+
+    for (auto m : moves) {
+        s.make_move(Move::from_gtp_string(m, 9));
+    }
+
+    auto black_board = s.black_board();
+    auto white_board = s.white_board();
+
+    ASSERT_EQ(s.last_move(), Move::from_gtp_string(*std::rbegin(moves), 9));
+    ASSERT_TRUE(s.history(Color::BLACK).size() > 0);
+    ASSERT_TRUE(s.history(Color::WHITE).size() > 0);
+    
+    s.drop_history();
+
+    ASSERT_EQ(s.last_move(), Move::INVALID);
+
+    ASSERT_EQ(black_board, s.black_board());
+    ASSERT_EQ(white_board, s.white_board());
+
+    ASSERT_TRUE(s.history(Color::BLACK).size() == 1);
+    ASSERT_TRUE(s.history(Color::WHITE).size() == 1);
+}

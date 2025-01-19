@@ -1,7 +1,7 @@
 import pytest
 
-from pygo import Color, Pass
-from pygo.gtp import parse_color, parse_move, move_to_str
+from migo import Color, Pass
+from migo.gtp import parse_color, parse_move, move_to_str
 
 
 class TestGtpUtils:

@@ -37,6 +37,13 @@ public:
         assert(black_history_.size() == white_history_.size());
     }
 
+    void drop_history() {
+        if (black_history_.size() > 1)
+            black_history_.resize(1);
+        if (white_history_.size() > 1)
+            white_history_.resize(1);
+    }
+
     std::list<std::vector<int>> const& get(Color c) const {
         if (c == Color::BLACK) {
             return black_history_;
@@ -74,8 +81,9 @@ void State::make_move(Move const& move, Color player) {
         player = current_player;
     }
 
-    if (not state_->is_legal(player, move)) {
-        throw IllegalMoveException("Illegal move");
+    std::string err;
+    if (not state_->is_legal(player, move, &err)) {
+        throw IllegalMoveException("Illegal move " + err);
     }
 
     state_->make_move(player, move);
@@ -85,6 +93,12 @@ void State::make_move(Move const& move, Color player) {
 
     current_player = opposite_color(current_player);
 }
+
+void State::drop_history() {
+    history_->drop_history();
+    state_->drop_history();
+    last_move_ = Move::INVALID;
+}  
 
 std::unordered_set<Move> State::legal_moves(Color c, bool include_eyes) const {
     if (c == Color::EMPTY) {

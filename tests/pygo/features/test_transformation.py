@@ -2,8 +2,8 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from pygo.misc import move_to_index
-from pygo.features.transformation import THTransformation, index_to_onehot, onehot_to_index, transform_index, \
+from migo.misc import move_to_index
+from migo.features.transformation import THTransformation, index_to_onehot, onehot_to_index, transform_index, \
     rotate_features_and_action
 
 

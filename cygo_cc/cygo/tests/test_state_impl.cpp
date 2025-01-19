@@ -9,7 +9,7 @@ TEST(state_impl_test, is_legal_initial_state) {
     for (int i = 1; i <= 25; ++i) {
         StateImpl s(i, false);
 
-        ASSERT_EQ(i * i, s.legal_moves(Color::BLACK, false).size());
+        ASSERT_EQ(i * i * 1ul, s.legal_moves(Color::BLACK, false).size());
     }
 }
 
@@ -74,3 +74,28 @@ TEST(state_impl_test, is_legal_ko) {
     }
 }
 
+TEST(state_impl_test, drop_history) {
+    {
+        StateImpl s(9, false);
+
+        s.make_move(Color::BLACK, Move::from_gtp_string("F5", 9));
+        s.make_move(Color::BLACK, Move::from_gtp_string("E4", 9));
+        s.make_move(Color::BLACK, Move::from_gtp_string("E6", 9));
+        s.make_move(Color::BLACK, Move::from_gtp_string("D5", 9));
+
+        ASSERT_TRUE(s.move_history(Color::BLACK).size() > 0);
+        ASSERT_TRUE(s.move_history(Color::WHITE).size() == 0);
+
+        s.drop_history();
+
+        ASSERT_TRUE(s.move_history(Color::BLACK).size() == 0);
+        ASSERT_TRUE(s.move_history(Color::WHITE).size() == 0);
+
+        ASSERT_TRUE(s.is_legal(Color::BLACK, Move::from_gtp_string("E5", 9)));
+        ASSERT_FALSE(s.is_legal(Color::WHITE, Move::from_gtp_string("E5", 9)));
+
+        s.make_move(Color::BLACK, Move::from_gtp_string("E5", 9));
+        ASSERT_TRUE(s.move_history(Color::BLACK).size() > 0);
+        ASSERT_TRUE(s.move_history(Color::WHITE).size() == 0);
+    }
+}

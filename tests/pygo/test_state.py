@@ -3,8 +3,8 @@ from random import Random
 import numpy as np
 import numpy.testing as npt
 
-from pygo import State, Color, IllegalMoveError, all_coordinates
-from pygo.state import parse
+from migo import State, Color, IllegalMoveError, all_coordinates
+from migo.state import parse
 
 
 def random_state(seed=None):
@@ -583,9 +583,9 @@ def test_to_cygo():
 
 def test_consistent_with_cygo():
     import cygo
-    import pygo
+    import migo
     cs = cygo.State(4)
-    ps = pygo.State(4)
+    ps = migo.State(4)
     moves = [(1, 1), (1, 2), None, None, (2, 3)]
     for m in moves:
         cs.make_move(m)
