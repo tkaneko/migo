@@ -1,0 +1,77 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel",
+    "ninja",
+    "cmake>=3.12",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name="migo"
+version="0.1.4"
+dependencies = [
+  "recordclass",
+  "numpy",
+  "sgf",
+  "matplotlib",
+  "tabulate",
+  "tqdm",
+  "click",
+  "coloredlogs",
+]
+requires-python = ">=3.10"
+authors = [
+  {name = "T. Kaneko", email="kaneko@graco.c.u-tokyo.ac.jp"},
+  {name = "Yusaku Mandai"},
+]
+description="Library of the game of Go for Python"
+readme = {file = "README.md", content-type="text/markdown"}
+classifiers = [
+  'Topic :: Games/Entertainment :: Board Games',
+  'Development Status :: 3 - Alpha',
+  'Operating System :: POSIX :: Linux',
+  'Operating System :: MacOS :: MacOS X',
+  'Intended Audience :: Developers',
+  'Intended Audience :: Education',
+  'Intended Audience :: Science/Research',
+]
+
+[project.optional-dependencies]
+infer_cpu = [
+  "torch",
+  "onnxruntime",
+  "onnx",
+]
+infer_gpu = [
+  "torch==2.6",
+  "torch_tensorrt==2.6.1",
+  "torchvision==0.21.0",
+  "onnxruntime-gpu",
+  "onnx",
+]
+test = [
+  "pytest",
+]
+doc = [
+  "sphinx",
+  "breathe",
+]
+
+[project.urls]
+Repository = "https://github.com/tkaneko/migo"
+
+[project.scripts]
+gomodel = "migo.utility.model:main"
+goselfplay = "migo.utility.selfplay:main"
+goguirunner = "migo.utility.goguirunner:main"
+gorltrain = "migo.utility.rltrain:main"
+
+[tool.setuptools]
+packages = ["migo", "migo.features", "migo.gtp"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = [
+    "tests",
+]

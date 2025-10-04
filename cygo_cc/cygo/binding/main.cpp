@@ -43,7 +43,7 @@ void setup_color(py::module& m) {
 }
 
 void setup_move(py::module& m) {
-    py::class_<cygo::Move>(m, "Move")
+      py::class_<cygo::Move>(m, "Move")
             .def_static("from_coordinate",
                  &cygo::Move::from_coordinate,
                  "construct Move object from coordinate and board size\n\n"
@@ -286,10 +286,28 @@ void setup_state(py::module& m) {
                  [](cygo::State const& state, std::pair<int, int> const& v, cygo::Color c) {
                      return state.is_legal(cygo::Move::from_coordinate(v.first, v.second, state.board_size()), c);
                  },
-                 "move"_a, "color"_a = cygo::Color::EMPTY
+                 "move"_a, "color"_a = cygo::Color::EMPTY,
+                 "Return move is legal"
+            )
+            .def("is_eye_like", &cygo::State::is_eye_like,
+                 "move"_a, "color"_a=cygo::Color::EMPTY
+            )
+            .def("is_eye_like",
+                 [](cygo::State const& s, std::pair<int, int> const& v, cygo::Color c) {
+                   auto move = cygo::Move::from_coordinate(v.first, v.second, s.board_size());
+                   return s.is_eye_like(move, c);
+                 },
+                 "move"_a, "color"_a=cygo::Color::EMPTY
+            )
+            .def("is_suicide_move",
+                 [](cygo::State const& state, cygo::Move const& v, cygo::Color c) {
+                     return state.is_suicide_move(v, c);
+                 },
+                 "move"_a, "color"_a = cygo::Color::EMPTY,
+                 "Return whether move is suicide"
             )
             .def("tromp_taylor_score",
-                 &cygo::State::tromp_taylor_score,
+                 [](const cygo::State& s, cygo::Color c) { return s.tromp_taylor_score(c); },
                  "Returns tromp taylor score from Color perspective with :py:attr:`cygo.State.komi`\n\n"
                  ":param color: viewpoint (EMPTY for turn)\n",
                  ">>> state = cygo.State(5, komi=1)\n"
@@ -348,6 +366,21 @@ void setup_state(py::module& m) {
                  ">>> state.tromp_taylor_score(cygo.Color.BLACK)\n"
                  "-6.0\n",
                  "color"_a = cygo::Color::EMPTY
+            )
+            .def("tromp_taylor_fill",
+                 [](const cygo::State& s) {
+                       auto N = s.board_size();
+                       py::array_t<int8_t> ret_py(N * N);
+                       auto ret = ret_py.mutable_unchecked<1>();
+                       std::fill(&ret[0], &ret[0]+N*N, 0);
+                       s.tromp_taylor_score(cygo::Color::EMPTY, &ret[0]);
+                       return ret_py.reshape({N, N});
+                 },
+                 "Return numpy array filled by color"
+            )
+            .def("info",
+                 &cygo::State::info,
+                 "return internal info"
             )
             .def_property_readonly("move_history", [] (cygo::State& state) {
               return state.move_history(cygo::Color::EMPTY);
@@ -424,7 +457,7 @@ void setup_attributes(py::module& m) {
           "The moves should be an ndarray of ints, "
           "each of which is Move.raw or -1 for pass.\n\n"
           ".. warning:: -1 is inconsistent with :cpp:member:`cygo::Move::PASS` which is -2",
-          "state"_a, "moves"_a
+          "state"_a, "moves"_a, "move_id"_a=-1
     );
 
     m.def("zobrist_hash",
@@ -460,6 +493,58 @@ void setup_features(py::module& m) {
 
     m_features.def("color_black", &cygo::black);
     m_features.def("color_white", &cygo::white);
+
+    m_features.def("features_at", cygo::features_at,
+                   "Return a sequence of the set of features for given sequence of states specified by moves and ids.",
+                   "board_size"_a, "moves"_a.noconvert(), "ids"_a, "history_n"_a
+    );
+
+    m_features.def("collate", cygo::collate,
+                   "collate function for SgfDataset, implemented in C++",
+                   "indices"_a,
+                   "history_n"_a, "board_size"_a,
+                   "move_offset"_a.noconvert(), "game_moves"_a.noconvert(), "winner"_a.noconvert(),
+                   "data_offset"_a.noconvert(), "ignore_opening_moves"_a,
+                   "correct_invalid_index"_a=false
+    );
+
+    m_features.def("collatez", cygo::collatez,
+                   "collate function for ZoneDataset, implemented in C++",
+                   "indices"_a,
+                   "history_n"_a, "board_size"_a,
+                   "move_offset"_a.noconvert(), "game_moves"_a.noconvert(), "winner"_a.noconvert(),
+                   "data_offset"_a.noconvert(), "ignore_opening_moves"_a,
+                   "zones"_a.noconvert(), "zone_score"_a.noconvert(),
+                   "correct_invalid_index"_a=false
+    );
+
+    m_features.def("collate_ext", cygo::collate_ext,
+                   "collate function for ExtendedDataset, implemented in C++",
+                   "indices"_a,
+                   "history_n"_a, "board_size"_a,
+                   "move_offset"_a.noconvert(), "game_moves"_a.noconvert(), "winner"_a.noconvert(),
+                   "data_offset"_a.noconvert(), "ignore_opening_moves"_a,
+                   "enabled_colors"_a,
+                   "aux_zones"_a.noconvert(),
+                   "aux_plane_labels"_a.noconvert(),
+                   "aux_values"_a.noconvert()
+    );
+
+    m_features.def("make_territory", cygo::make_territory,
+                   "compute territory at game end\n\n"
+                   "return ndarray with dimension games*(board_size**2 + 1), int8",
+                   "board_size"_a,
+                   "move_offset"_a.noconvert(), "game_moves"_a.noconvert()
+    );
+
+    m_features.def("batch_features", cygo::batch_features,
+                   "Return a batch of features.",
+                   "state_list"_a.noconvert(), "history_n"_a
+    );
+    m_features.def("batch_features_with_zone", cygo::batch_features_with_zone,
+                   "Return a batch of features.",
+                   "state_list"_a.noconvert(), "history_n"_a, "zone"_a
+    );
 }
 
 

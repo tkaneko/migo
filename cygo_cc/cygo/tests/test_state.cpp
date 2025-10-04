@@ -41,7 +41,7 @@ TEST(state_test, real_game_1) {
         s.make_move(Move::from_gtp_string(m, 9));
     }
 
-    std::vector<int> black_board = {
+    std::vector<uint8_t> black_board = {
             0, 0, 0, 0, 0, 0, 0, 1, 1,
             1, 0, 0, 0, 0, 0, 0, 1, 0,
             1, 0, 0, 0, 0, 0, 1, 1, 1,
@@ -53,7 +53,7 @@ TEST(state_test, real_game_1) {
             0, 1, 0, 1, 1, 1, 0, 1, 1,
     };
 
-    std::vector<int> white_board = {
+    std::vector<uint8_t> white_board = {
             1, 1, 0, 1, 0, 1, 1, 0, 0,
             0, 1, 1, 0, 1, 1, 1, 0, 0,
             0, 1, 1, 1, 0, 1, 0, 0, 0,
@@ -104,7 +104,7 @@ TEST(state_test, real_game_2) {
         s.make_move(Move::from_gtp_string(m, 9));
     }
 
-    std::vector<int> black_board = {
+    std::vector<uint8_t> black_board = {
             0, 0, 0, 0, 0, 1, 1, 1, 1,
             0, 0, 0, 0, 1, 1, 0, 1, 1,
             0, 0, 0, 1, 1, 1, 1, 1, 0,
@@ -116,7 +116,7 @@ TEST(state_test, real_game_2) {
             0, 0, 0, 0, 0, 0, 1, 1, 1,
     };
 
-    std::vector<int> white_board = {
+    std::vector<uint8_t> white_board = {
             1, 0, 1, 1, 1, 0, 0, 0, 0,
             1, 1, 0, 1, 0, 0, 0, 0, 0,
             1, 0, 1, 0, 0, 0, 0, 0, 0,
@@ -168,7 +168,7 @@ TEST(state_test, real_game_3) {
         A B C D E F G H J
      */
 
-    std::vector<int> black_board = {
+    std::vector<uint8_t> black_board = {
             0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0, 0, 0, 0,
             0, 0, 0, 1, 0, 0, 0, 0, 0,
@@ -180,7 +180,7 @@ TEST(state_test, real_game_3) {
             0, 1, 1, 1, 1, 0, 0, 0, 0,
     };
 
-    std::vector<int> white_board = {
+    std::vector<uint8_t> white_board = {
             1, 0, 1, 0, 1, 1, 1, 1, 1,
             0, 1, 0, 1, 1, 0, 1, 1, 0,
             1, 1, 1, 0, 1, 1, 1, 1, 1,
@@ -195,6 +195,28 @@ TEST(state_test, real_game_3) {
     ASSERT_EQ(black_board, s.black_board());
     ASSERT_EQ(white_board, s.white_board());
 }
+
+TEST(state_history_size_test, history_size) {
+    const auto history_n = 3;
+    State s(9, 7.5, false, history_n);
+    ASSERT_TRUE(s.max_history_n() == history_n);
+    ASSERT_TRUE(s.history(Color::BLACK).size() == 0);
+    ASSERT_TRUE(s.history(Color::WHITE).size() == 0);
+    for (auto move: {"D5", "C3", "E7"}) {
+        s.make_move(Move::from_gtp_string(move, 9));
+    }
+    ASSERT_TRUE(s.history(Color::BLACK).size() == history_n);
+    ASSERT_TRUE(s.history(Color::WHITE).size() == history_n);
+
+    s.make_move(Move::from_gtp_string("F3", 9));
+    ASSERT_TRUE(s.history(Color::BLACK).size() == history_n+1);
+    ASSERT_TRUE(s.history(Color::WHITE).size() == history_n+1);
+
+    s.make_move(Move::from_gtp_string("G5", 9));
+    ASSERT_TRUE(s.history(Color::BLACK).size() == history_n+1);
+    ASSERT_TRUE(s.history(Color::WHITE).size() == history_n+1);
+}
+
 
 TEST(state_test, drop_history) {
     State s(9, 7.5, false, 0);
@@ -225,4 +247,18 @@ TEST(state_test, drop_history) {
 
     ASSERT_TRUE(s.history(Color::BLACK).size() == 1);
     ASSERT_TRUE(s.history(Color::WHITE).size() == 1);
+}
+
+TEST(state_test, score) {
+    State s(9, 7.5, false, 0);
+    std::vector<int8_t> board(9*9u, 0);
+    ASSERT_EQ(s.tromp_taylor_score(Color::EMPTY, &*board.begin()), -7.5);
+    ASSERT_EQ(0, *std::max_element(board.begin(), board.end()));
+    ASSERT_EQ(0, *std::min_element(board.begin(), board.end()));
+    
+    s.make_move(Move::from_gtp_string("E5", 9));
+    ASSERT_EQ(s.tromp_taylor_score(Color::EMPTY, &*board.begin()), -73.5);
+
+    ASSERT_EQ(1, *std::max_element(board.begin(), board.end()));
+    ASSERT_EQ(1, *std::min_element(board.begin(), board.end()));
 }

@@ -14,8 +14,8 @@ IllegalMoveException::IllegalMoveException(std::string const& s) : invalid_argum
 
 class State::History {
 private:
-    std::list<std::vector<int>> black_history_;
-    std::list<std::vector<int>> white_history_;
+    std::list<std::vector<uint8_t>> black_history_;
+    std::list<std::vector<uint8_t>> white_history_;
 
 public:
     const std::size_t max_buffer_len;
@@ -44,7 +44,7 @@ public:
             white_history_.resize(1);
     }
 
-    std::list<std::vector<int>> const& get(Color c) const {
+    std::list<std::vector<uint8_t>> const& get(Color c) const {
         if (c == Color::BLACK) {
             return black_history_;
         }
@@ -116,19 +116,33 @@ bool State::is_legal(Move const& move, Color player) const {
     return state_->is_legal(player, move);
 }
 
+bool State::is_suicide_move(Move const& v, Color c) const {
+    if (c == Color::EMPTY) {
+        c = current_player;
+    }
+    return state_->is_suicide_move(c, v);
+}
+
+bool State::is_eye_like(Move v, Color c) const {
+    if (c == Color::EMPTY)
+        c = current_player;
+    return state_->is_eye_like(c, v)
+        && state_->is_suicide_move(opposite_color(c), v);
+}
+
 std::vector<Color> const& State::stones() const {
     return state_->chain_group().stones();
 }
 
-std::vector<int> const& State::black_board() const {
+std::vector<uint8_t> const& State::black_board() const {
     return state_->chain_group().black_board();
 }
 
-std::vector<int> const& State::white_board() const {
+std::vector<uint8_t> const& State::white_board() const {
     return state_->chain_group().white_board();
 }
 
-std::list<std::vector<int>> const& State::history(Color c) const {
+std::list<std::vector<uint8_t>> const& State::history(Color c) const {
     return history_->get(c);
 }
 
@@ -144,12 +158,12 @@ bool State::superko_rule() const {
     return state_->superko_rule();
 }
 
-double State::tromp_taylor_score(Color c) const {
+double State::tromp_taylor_score(Color c, int8_t *board_zero_filled) const {
     if (c == Color::EMPTY) {
         c = current_player;
     }
 
-    double score = state_->tromp_taylor_score(c);
+    double score = state_->tromp_taylor_score(c, board_zero_filled);
 
     return (c == Color::BLACK) ? score - komi : score + komi;
 }
@@ -225,3 +239,8 @@ ZobristHash::ValueType State::hash() const {
 }
 
 }
+
+std::string cygo::State::info() const {
+  return state_->info();
+}
+

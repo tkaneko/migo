@@ -1,15 +1,16 @@
 #ifndef CYGO_CHAIN_GROUP_HPP
 #define CYGO_CHAIN_GROUP_HPP
 
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-
 #include "chain.hpp"
 #include "color.hpp"
 #include "neighbor_counter.hpp"
 #include "move.hpp"
 #include "zobrist_hash.hpp"
+
+#include <unordered_set>
+#include <vector>
+#include <optional>
+#include <cstdint>
 
 namespace cygo {
 
@@ -24,8 +25,8 @@ public:
 
     std::unordered_set<Move> const& empties() const;
 
-    std::vector<int> const& black_board() const;
-    std::vector<int> const& white_board() const;
+    std::vector<uint8_t> const& black_board() const;
+    std::vector<uint8_t> const& white_board() const;
 
     std::vector<Color> const& stones() const;
 
@@ -40,8 +41,9 @@ public:
 
     std::string to_string() const;
 
+    bool check_internal_consistency() const;
 private:
-    Chain& chain_at_(Move const& v, bool with_check = true);
+    Chain& chain_at_(Move const& v);
 
     void set_stone(Color c, Move const& v);
 
@@ -55,14 +57,14 @@ private:
     ZobristHash hash_;
 
     std::vector<Color> stones_;
-    std::vector<int> black_stones_;
-    std::vector<int> white_stones_;
+    std::vector<uint8_t> black_stones_;
+    std::vector<uint8_t> white_stones_;
 
-    std::vector<int> chain_ids_;
+    std::vector<int> chain_ids_; // Vertex -> ID
     std::vector<NeighborCounter> neighbor_counters_;
 
     std::unordered_set<Move> empties_;
-    std::unordered_map<int, Chain> chains_;
+    std::vector<std::optional<Chain>> chains_;
 };
 
 }  // namespace  cygo

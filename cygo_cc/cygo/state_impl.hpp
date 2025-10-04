@@ -7,8 +7,8 @@
 #include "move.hpp"
 #include "zobrist_hash.hpp"
 
-#include <map>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
 #include <string>
 
@@ -28,7 +28,7 @@ public:
     bool is_suicide_move(Color c, Move const& v) const;
     bool is_positional_superko(Color c, Move const& v, std::string *err=nullptr) const;
 
-    double tromp_taylor_score(Color c) const;
+    double tromp_taylor_score(Color c, int8_t *board_zero_filled=nullptr) const;
 
     int board_size() const;
     bool superko_rule() const;
@@ -38,7 +38,7 @@ public:
     ChainGroup const& chain_group() const;
 
     std::vector<Move> move_history(Color c) const;
-
+    std::string info() const;
 private:
     const int board_size_;
     bool superko_rule_;
@@ -47,7 +47,7 @@ private:
 
     Move ko_vertex_;
 
-    std::map<Color, std::vector<Move>> color_move_history_;
+    PlayerMap<std::vector<Move>> color_move_history_;
     std::unordered_map<ZobristHash::ValueType, int> hash_history_;
     std::vector<Move> move_history_;
 };

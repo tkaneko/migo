@@ -10,7 +10,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
+*build/
 develop-eggs/
 dist/
 downloads/
@@ -117,5 +117,12 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# torch data
+*.pth
+*.ts
+*.npz
+*.json
+*.onnx
 
 /doc-api/xml/
+uv.lock

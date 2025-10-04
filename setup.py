@@ -62,17 +62,6 @@ class CMakeBuild(build_ext):
 
 
 setup(
-    name='migo',
-    version='0.1.3',
-    author='Tomoyuki Kaneko and Yusaku Mandai',
-    author_email='kaneko@graco.c.u-tokyo.ac.jp',
-    description='Library of the game of Go for Python',
-    long_description='',
-    packages=[
-        'migo',
-        'migo.features',
-        'migo.gtp',
-    ],
     ext_modules=[
         CMakeExtension(
             name='cygo',
@@ -84,7 +73,4 @@ setup(
         'build_ext': CMakeBuild
     },
     zip_safe=False,
-    scripts=[
-                'scripts/gomodel',
-    ],
 )

@@ -9,7 +9,7 @@
 project = 'migo'
 copyright = '2024-2025, games-research-komaba'
 author = 'games-research-komaba'
-release = 'r0-1-3'
+release = 'r0-1-4'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

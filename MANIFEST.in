@@ -1,0 +1,2 @@
+include README.md
+recursive-include cygo_cc *.cpp *.hpp CMakeLists.txt LICENSE* MANIFEST* README* setup.* *.yaml *.cmake

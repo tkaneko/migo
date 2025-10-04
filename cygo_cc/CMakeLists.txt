@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(cygo CXX)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE}        -Wall -Wextra -march=native -Wno-deprecated -DNDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG          "${CMAKE_CXX_FLAGS_DEBUG}          -Wall -Wextra -march=native -fno-inline")
@@ -24,6 +24,7 @@ include_directories(${CMAKE_BINARY_DIR}/pybind11/include)
 add_subdirectory(${CMAKE_BINARY_DIR}/pybind11 ${CMAKE_CURRENT_BINARY_DIR}/pybind11-build)
 
 # google test
+option(CYGO_ENABLE_TESTING OFF)
 if(${CYGO_ENABLE_TESTING})
     message(STATUS "Test enabled")
     include(cmake/gtest.cmake)

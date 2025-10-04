@@ -1,8 +1,8 @@
 """neural networks in pytorch"""
 import torch
+import logging
 from torch import nn
 from typing import Tuple
-import numpy as np
 
 
 class ResBlockAlt(nn.Module):
@@ -32,15 +32,23 @@ class Conv2d(nn.Module):
 class PolicyHead(nn.Module):
     """policy head
     """
-    def __init__(self, *, board_size: int, channels: int):
+    def __init__(
+        self, *, board_size: int, channels: int, last_channels: int = 2,
+        output_channels: int = 1
+    ):
+        '''
+        :param channels: number of input channels
+        :param last_channels: number of filters in the last convolution
+        :param output_channels: number of policies, usually one
+        '''
         super().__init__()
-        last_channels = 1
         self.head = nn.Sequential(
             Conv2d(channels, last_channels, 1),
             nn.ReLU(),
             nn.Flatten(),
+            # +1 for pass
             nn.Linear((board_size ** 2) * last_channels,
-                      (board_size ** 2) + 1),  # +1 for pass
+                      ((board_size ** 2) + 1) * output_channels),
         )
 
     def forward(self, data: torch.Tensor) -> torch.Tensor:
@@ -50,7 +58,8 @@ class PolicyHead(nn.Module):
 class ValueHead(nn.Module):
     """value head
     """
-    def __init__(self, *, board_size: int, channels: int, hidden_layer_size):
+    def __init__(self, *, board_size: int, channels: int, hidden_layer_size,
+                 output_dim=1):
         super().__init__()
         self.head = nn.Sequential(
             Conv2d(channels, 1, 1),
@@ -58,7 +67,7 @@ class ValueHead(nn.Module):
             nn.Flatten(),
             nn.Linear(board_size ** 2, hidden_layer_size),
             nn.ReLU(),
-            nn.Linear(hidden_layer_size, 1),
+            nn.Linear(hidden_layer_size, output_dim),
             nn.Tanh(),
         )
 
@@ -128,14 +137,19 @@ class PVNetwork(nn.Module):
     def __init__(self, *, board_size: int,
                  in_channels: int, channels: int,
                  num_blocks: int,
-                 value_head_hidden: int = 256, broadcast_every: int = 3):
+                 value_head_hidden: int = 256, broadcast_every: int = 3,
+                 policy_output_channels: int = 1,
+                 network_class='PVNetwork'):
         super().__init__()
+        if network_class != 'PVNetwork':
+            raise ValueError(f'{network_class} != PVNetwork')
         self.body = BasicBody(in_channels=in_channels, channels=channels,
                               num_blocks=num_blocks,
                               broadcast_every=broadcast_every)
         self.head = PolicyHead(
             board_size=board_size,
             channels=channels,
+            output_channels=policy_output_channels,
         )
         self.value_head = ValueHead(
             board_size=board_size,
@@ -149,6 +163,8 @@ class PVNetwork(nn.Module):
             'num_blocks': num_blocks,
             'value_head_hidden': value_head_hidden,
             'broadcast_every': broadcast_every,
+            'policy_output_channels': policy_output_channels,
+            'network_class': 'PVNetwork',
         }
 
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -164,15 +180,101 @@ class PVNetwork(nn.Module):
         """device where this object is placed"""
         return next(self.parameters()).device
 
-    @staticmethod
-    def load(path):
-        """load from path"""
-        objs = torch.load(path)
-        cfg = objs['cfg']
+    def save(self, path):
+        torch.save({
+            'cfg': self.config,
+            'model_state_dict': self.state_dict()
+        }, path)
+
+
+class ExtendedNetwork(PVNetwork):
+    '''
+    Variant of :py:class:`PVNetwork`
+    extended with aux_value_head and aux_policy_head
+    '''
+    def __init__(
+            self, *,
+            # for PVNetwork
+            board_size: int,
+            in_channels: int, channels: int, num_blocks: int,
+            value_head_hidden: int = 256, broadcast_every: int = 3,
+            policy_output_channels: int = 2,
+            # for additional heads
+            aux_policy_channels: int = 1, aux_value_dim: int = 1,
+            with_aux_input: bool = False,
+            network_class: str = 'ExtendedNetwork',
+    ):
+        super().__init__(
+            board_size=board_size,
+            in_channels=in_channels, channels=channels, num_blocks=num_blocks,
+            value_head_hidden=value_head_hidden,
+            broadcast_every=broadcast_every,
+            policy_output_channels=policy_output_channels,
+        )
+        if network_class != 'ExtendedNetwork':
+            raise ValueError(f'{network_class} != ExtendedNetwork')
+        self.config['network_class'] = 'ExtendedNetwork'
+        self.config['aux_policy_channels'] = aux_policy_channels
+        self.config['aux_value_dim'] = aux_value_dim
+        self.config['with_aux_input'] = with_aux_input
+
+        self.aux_policy_head = PolicyHead(
+            board_size=board_size,
+            channels=channels,
+            output_channels=aux_policy_channels,
+        )
+        self.aux_value_head = ValueHead(
+            board_size=board_size,
+            channels=channels,
+            hidden_layer_size=value_head_hidden,
+            output_dim=aux_value_dim,
+        )
+
+    def forward(
+            self, x: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor]:
+        x = self.body(x)
+        policy = self.head(x)
+        value = self.value_head(x)
+        aux_policy = self.aux_policy_head(x)
+        aux_value = self.aux_value_head(x)
+        return policy, value, aux_policy, aux_value
+
+
+def load_network(path):
+    """load from path"""
+    objs = torch.load(path)
+    cfg = objs['cfg']
+    if cfg.get('network_class', 'PVNetwork') == 'PVNetwork':
         model = PVNetwork(**cfg)
-        if 'model_state_dict' in objs:
-            model.load_state_dict(objs['model_state_dict'])
-        return (model, cfg)
+    else:
+        if (nclass := cfg['network_class']) != 'ExtendedNetwork':
+            logging.warning(f"unkknown network_class {nclass}")
+        model = ExtendedNetwork(**cfg)
+    if 'model_state_dict' in objs:
+        model.load_state_dict(objs['model_state_dict'])
+    return (model, model.config)
+
+
+zone_names = ['null', 'full', 'center', 'edge']
+
+
+def zone_plane(board_size: int, zone_type: str):
+    import numpy as np
+    zone = np.zeros((board_size, board_size), dtype=np.int8)
+    if zone_type == 'null':
+        return zone
+    if zone_type == 'full':
+        return np.ones_like(zone)
+    # center
+    for x in range(2, 7):
+        for y in range(2, 7):
+            zone[x, y] = 1
+    if zone_type == 'center':
+        return zone
+    if zone_type == 'edge':
+        return np.ones_like(zone) - zone
+    raise RuntimeError(f'not implemented, WIP. {zone_type=}')
 
 
 # Local Variables:

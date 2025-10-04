@@ -10,23 +10,16 @@ set(srcs
 )
 set(test_name cygo_test)
 
-
 if(${CYGO_ENABLE_TESTING})
-    include_directories(${GOOGLETEST_INCLUDE_DIR})
-    link_directories(${GOOGLETEST_LIBRARY_DIR})
-
     add_executable(${test_name} ${srcs})
-
     add_dependencies(${test_name} cygo-core)
-    add_dependencies(${test_name} googletest)
 
     target_link_libraries(${test_name}
-        libgmock.a
-        libgtest.a
-        libgtest_main.a
         cygo-core
-        pthread
+        GTest::gtest_main
     )
+    include(GoogleTest)
+    gtest_discover_tests(${test_name})
 
     add_test(
         NAME ${test_name}

@@ -7,20 +7,13 @@ namespace py = pybind11;
 
 namespace cygo {
 
-void apply_moves(State& state, py::array_t<int> const& moves) {
-    auto board_size = state.board_size();
-    auto move_length = moves.size();
+void apply_moves(State& state, py::array_t<int> const& moves_py, int move_id) {
+    auto moves = moves_py.unchecked<1>();
+    if (move_id >= moves.size())
+        throw std::domain_error("apply_moves: range error in move_id "+std::to_string(move_id));
 
-    for (int i = 0; i < move_length; ++ i) {
-        auto move = moves.at(i);
-
-        if (move == -1) {
-            state.make_move(Move::PASS);
-        }
-        else {
-            state.make_move(Move::from_raw(move, board_size));
-        }
-    }
+    int move_length = (move_id < 0) ? (int)moves.size() : move_id;
+    apply_moves_range(state, moves, 0, move_length);
 }
 
 ZobristHash::ValueType zobrist_hash(pybind11::array_t<float> const& black, pybind11::array_t<float> const& white) {

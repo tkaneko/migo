@@ -52,13 +52,23 @@ def move_to_sgf(move: Optional[Tuple[int, int]]) -> str:
     return ascii_lowercase[move[0]] + ascii_lowercase[move[1]]
 
 
-def parse_sgf_move(move_str: str) -> Optional[Tuple[int, int]]:
-    """Returns either None or (x, y) coordinates of board."""
+def parse_sgf_move(
+        move_str: str,
+        board_size: int = 0
+) -> Optional[Tuple[int, int]]:
+    """Returns either None or (x, y) coordinates of board.
+
+    :param move_str: two letters like 'ab'
+    :param board_size: board size, 0 is allowed only for pass
+    """
     if not (move_str == '' or _SGF_MOVE_REGEX.match(move_str)):
         raise SgfContentError
 
     if move_str == '' or move_str == 'tt':
         return None
+
+    if board_size < 1:
+        raise SgfContentError("need board_size if a move is not pass")
 
     e = SgfContentError("Invalid move string %s" % move_str)
 
@@ -70,8 +80,11 @@ def parse_sgf_move(move_str: str) -> Optional[Tuple[int, int]]:
         col = ascii_uppercase.index(move_str[0].upper())
         row = ascii_uppercase.index(move_str[1].upper())
 
+        # flip vertically to be consistent with gogui
+        row = board_size - 1 - row
+
         if (0 <= col < 19) and (0 <= row < 19):
-            return col, row
+            return row, col
 
         raise e
 
@@ -94,7 +107,7 @@ def parse_sgf_result(score_str: str) -> Tuple[SgfColor, float]:
         raise SgfContentError
 
     if score_str[2] == 'R':
-        score = 0
+        score = 0.
     else:
         score = float(score_str[2:])
 
@@ -131,7 +144,7 @@ class SgfPrinter:
     >>> print(out.getvalue())
     (;FF[4]GM[1]SZ[4];B[a2];W[2c])
     """
-    def __init__(self, out, size, initial_props: Dict = None):
+    def __init__(self, out, size, initial_props: Optional[Dict] = None):
         self.parser = sgf.Parser()
         self.collection = sgf.Collection(self.parser)
 
@@ -206,10 +219,12 @@ def _set_up_state(props: Dict[str, List[str]], board_size: int, go):
 
     state = go.State(size, komi=komi)
 
-    for move in props.get('AB', []):
+    for sgf_move in props.get('AB', []):
+        move = parse_sgf_move(sgf_move, board_size)
         state.make_move(move, go.Color.BLACK)
 
-    for move in props.get('AW', []):
+    for sgf_move in props.get('AW', []):
+        move = parse_sgf_move(sgf_move, board_size)
         state.make_move(move, go.Color.WHITE)
 
     state.current_player = go.Color.BLACK if start_player == 'B' \
@@ -238,16 +253,17 @@ def parse_one_game(sgf_string: str, board_size: int, go,
     root_props = game.root.properties
 
     initial_state = _set_up_state(root_props, board_size, go)
+    board_size = initial_state.board_size
 
     moves = []
     for node in game.rest or []:
         props = node.properties
 
         if 'W' in props:
-            move = parse_sgf_move(props['W'][0])
+            move = parse_sgf_move(props['W'][0], board_size)
             player = go.Color.WHITE
         elif 'B' in props:
-            move = parse_sgf_move(props['B'][0])
+            move = parse_sgf_move(props['B'][0], board_size)
             player = go.Color.BLACK
         else:
             raise SgfContentError("Found a node without move properties")

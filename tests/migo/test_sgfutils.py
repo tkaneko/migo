@@ -52,20 +52,20 @@ class TestSgfParseSgfMove:
         assert parse_sgf_move('tt') is None
 
     def test_when_move_is_valid(self):
-        assert parse_sgf_move('aa') == (0, 0)
-        assert parse_sgf_move('AA') == (0, 0)
-        assert parse_sgf_move('ab') == (0, 1)
-        assert parse_sgf_move('ss') == (18, 18)
+        assert parse_sgf_move('aa', board_size=19) == (18, 0)
+        assert parse_sgf_move('AA', board_size=19) == (18, 0)
+        assert parse_sgf_move('ab', board_size=19) == (17, 0)
+        assert parse_sgf_move('ss', board_size=19) == (0, 18)
 
     def test_when_move_is_invalid(self):
         with pytest.raises(SgfContentError):
-            parse_sgf_move('foobar')
+            parse_sgf_move('foobar', 9)
 
         with pytest.raises(SgfContentError):
-            parse_sgf_move('st')
+            parse_sgf_move('st', 9)
 
         with pytest.raises(SgfContentError):
-            parse_sgf_move('aaa')
+            parse_sgf_move('aaa', 9)
 
 
 class TestSgfGenerator:
@@ -85,7 +85,7 @@ class TestSgfGenerator:
 
         state, move, winner, score, comment = next(g)
         assert state.current_player == go.Color.BLACK
-        assert move == (3, 4)
+        assert move == (4, 3)
         assert winner == go.Color.BLACK
         assert score == 26
         assert comment == 'comment1'
@@ -151,7 +151,6 @@ def test_parse_cygo():
 )
 """
     import cygo.features
-    import numpy as np
     initial_state, moves, winner, score = parse_one_game(
             sgf_string, board_size=9, go=cygo,
             allow_ongoing_game=True
@@ -170,3 +169,13 @@ def test_parse_cygo():
     assert board_b.sum() == 3
     board_w = cygo.features.board_i(initial_state, 0, cygo.Color.WHITE)
     assert board_w.sum() == 2
+
+
+def test_print():
+    import numpy as np
+    sgf_string = '(;FF[4]GM[1]SZ[9]KM[7]RE[Draw];B[ee];W[he];B[tt];W[tt])'
+    record = migo.parse_sgf_game(sgf_string)
+    sgf2 = migo.record_to_sgf(record)
+    record2 = migo.parse_sgf_game(sgf2)
+    for i in range(len(record)):
+        assert np.array_equal(record[i], record2[i])

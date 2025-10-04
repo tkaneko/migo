@@ -60,3 +60,16 @@ TEST(features_test, board_i_color_impl) {
 
     ASSERT_EQ(expected_black, board_i_color<float>(s, 0, Color::BLACK));
 }
+
+TEST(features_test, game_move_pair) {
+    const std::vector<int> game_index = {0, 89, 89, 200};
+    const int idx[] = {3, 88, 89, 90, 200};
+    const int gid[] = {0,  0,  2,  2,   3};
+    const int mid[] = {3, 88,  0,  1,   0};
+
+    for (int i=0; i<5; ++i) {
+        auto [g, m] = to_game_move_pair(game_index, idx[i], 0);
+        ASSERT_EQ(gid[i], g);
+        ASSERT_EQ(mid[i], m);
+    }
+}

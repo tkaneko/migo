@@ -46,9 +46,9 @@ def parse_move(move_str: str) -> Move:
     >>> migo.gtp.parse_move('PASS') is None
     True
     >>> migo.gtp.parse_move('A19')
-    (0, 18)
+    (18, 0)
     >>> migo.gtp.parse_move('J1')
-    (8, 0)
+    (0, 8)
     """
     if move_str.lower() == 'pass':
         return None
@@ -58,8 +58,8 @@ def parse_move(move_str: str) -> Move:
         alphabet = matched.group('alphabet').upper()
         number = matched.group('numeric')
 
-        row = _LETTERS.find(alphabet)
-        col = int(number) - 1
+        col = _LETTERS.find(alphabet)
+        row = int(number) - 1
 
         if 0 <= row < 19 and 0 <= col < 19:
             return row, col

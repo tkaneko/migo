@@ -1,13 +1,17 @@
 import cygo
-from .sgfutils import parse_one_game
+from .sgfutils import parse_one_game, SgfPrinter
 import recordclass
 import numpy as np
+import io
 
 
 SimpleRecord = recordclass.recordclass(
     'SimpleRecord', (
-        'board_size', 'komi', 'moves', 'winner', 'score',
-     ))                         #: data record for a ordinary single game
+        'board_size', 'komi',
+        # results
+        'moves', 'winner', 'score',
+        'territory', 'zone_score',
+    ))                         #: data record for a ordinary single game
 
 
 def parse_sgf_game(sgf_string: str) -> SimpleRecord:
@@ -15,7 +19,7 @@ def parse_sgf_game(sgf_string: str) -> SimpleRecord:
 
     :return: :py:class:`SimpleRecord`
 
-    >>> sgf_string = ('(;GM[1]SZ[9]KM[7.0]RE[B+26]RU[Chinese];B[de]'
+    >>> sgf_string = ('(;GM[1]SZ[9]KM[7.0]RE[B+74]RU[Chinese];B[de]'
     ...               'C[comment1];W[tt]C[comment2];B[tt]C[comment3])')
     >>> record = migo.record.parse_sgf_game(sgf_string)
     >>> record.board_size
@@ -32,8 +36,8 @@ def parse_sgf_game(sgf_string: str) -> SimpleRecord:
     8 .  .  .  .  .  .  .  .  . 8
     7 .  .  .  .  .  .  .  .  . 7
     6 .  .  .  .  .  .  .  .  . 6
-    5 .  .  .  .  .  .  .  .  . 5
-    4 .  .  .  .  X  .  .  .  . 4
+    5 .  .  .  X  .  .  .  .  . 5
+    4 .  .  .  .  .  .  .  .  . 4
     3 .  .  .  .  .  .  .  .  . 3
     2 .  .  .  .  .  .  .  .  . 2
     1 .  .  .  .  .  .  .  .  . 1
@@ -47,7 +51,7 @@ def parse_sgf_game(sgf_string: str) -> SimpleRecord:
     if state.zobrist_hash != 0:
         raise RuntimeError('not implemented')
 
-    raw_moves = np.zeros(len(moves), dtype=np.int32)
+    raw_moves = np.zeros(len(moves), dtype=np.int16)
     for i, move in enumerate(moves):
         player_expected = cygo.Color.BLACK if i % 2 == 0 else cygo.Color.WHITE
         if move.player != player_expected:
@@ -89,3 +93,39 @@ def load_sgf_games_in_folder(folder_path) -> list[SimpleRecord]:
     for sgf_path in glob.glob(file_pattern):
         games.append(load_sgf_game(sgf_path))
     return games
+
+
+def move_to_sgf(move):
+    ascii_lowercase = 'abcdefghijklmnopqrstuvwxyz'
+    if isinstance(move, cygo.Move):
+        r, c = move.row, move.col
+    if isinstance(move, tuple):
+        r, c = move
+    return ascii_lowercase[c] + ascii_lowercase[r]
+
+
+def record_to_sgf(record: SimpleRecord) -> str:
+    '''return sgf representation of given record'''
+    out = io.StringIO()
+    props = {'KM': f'{record.komi}'}
+    if record.score is not None:
+        if record.score == 0:
+            props['RE'] = 'draw'
+        elif record.score > 0:
+            props['RE'] = f'B+{record.score}'
+        else:
+            props['RE'] = f'W+{-record.score}'
+    prt = SgfPrinter(
+        out, size=record.board_size,
+        initial_props=props
+    )
+    prt.open()
+    color = 'BW'
+    for i, move in enumerate(record.moves):
+        label = ''
+        if move >= 0:
+            move = cygo.Move.from_raw_value(move, record.board_size)
+            label = move_to_sgf(move)
+        prt.add_node({color[i % 2]: label})
+    prt.close()
+    return out.getvalue()

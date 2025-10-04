@@ -39,7 +39,7 @@ class State:
     ...
     >>> state.liberty_count_of((2, 2))
     3
-    >>> state.make_move('b3')
+    >>> state.make_move('c2')
     False
     >>> state.liberty_count_of((2, 2))
     2
@@ -217,7 +217,7 @@ class State:
 
     def liberty_count_of(self, position: Coord) -> int:
         """count liberties at position"""
-        return self.liberty_counts[position]
+        return self.liberty_counts[position].item()
 
     def liberty_set_of(self, position: Coord) -> Set[Coord]:
         """set of liberties at position"""

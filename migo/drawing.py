@@ -174,6 +174,21 @@ def put_number(ax, board_size, color, position, number,
             **others)
 
 
+def plot_state(state, config: dict = {}):
+    """make an image for given state
+    """
+    board_size = state.board_size
+    fig, ax, _ = make_fig(board_size, config=config)
+    planes = np.zeros((2, board_size, board_size))
+    state_planes = migo.features.board(state)
+    black_index = (1 - int(state.current_player)) // 2
+    planes[0] = state_planes[black_index]
+    planes[1] = state_planes[1 - black_index]
+    draw_plane(ax, planes[0], Color.BLACK)
+    draw_plane(ax, planes[1], Color.WHITE)
+    return fig, ax
+
+
 def plot_record(record, config: dict = {}, *,
                 with_note: bool = True, overwrite: bool = True):
     """make an image for given record

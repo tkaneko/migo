@@ -12,7 +12,11 @@ from migo.gtp.utils import move_to_str
 from migo.gtp.utils import parse_color
 from migo.gtp.utils import parse_move
 
+from .gogui import GoGuiGTPRunner, GoGuiParam, GoGuiParams, CommandType
+
+
 __all__ = [
     'GTPRunner', 'GTPRuntimeError', 'Status',
-    'move_to_str', 'parse_color', 'parse_move'
+    'move_to_str', 'parse_color', 'parse_move',
+    'GoGuiGTPRunner', 'GoGuiParam', 'GoGuiParams', 'CommandType',
 ]

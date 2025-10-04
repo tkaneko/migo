@@ -8,6 +8,7 @@ from migo.gtp import Status, GTPRunner
 class CommandType(str, enum.Enum):
     SBOARD = 'sboard'
     DBOARD = 'dboard'
+    BWBOARD = 'bwboard'
     CBOARD = 'cboard'
     STRING = 'string'
     HSTRING = 'hstring'

@@ -74,10 +74,6 @@ ChainGroup const& StateImpl::chain_group() const {
 std::vector<Move> StateImpl::move_history(Color c) const {
     if (c == Color::EMPTY)
         return move_history_;
-    
-    if (color_move_history_.count(c) == 0) {
-        return std::vector<Move>();
-    }
 
     return color_move_history_.at(c);
 }
@@ -125,10 +121,6 @@ bool StateImpl::is_suicide_move(Color c, Move const &v) const {
 }
 
 bool StateImpl::is_positional_superko(Color c, Move const& v, std::string *msg) const {
-    if (color_move_history_.count(c) == 0) {
-        return false;
-    }
-
     auto const& move_history = color_move_history_.at(c);
 
     if (std::find(std::begin(move_history), std::end(move_history), v)
@@ -155,10 +147,10 @@ bool StateImpl::superko_rule() const {
     return superko_rule_;
 }
 
-double StateImpl::tromp_taylor_score(Color color) const {
-    std::map<Color, int> score = {
-            {Color::WHITE, 0},
-            {Color::BLACK, 0}
+double StateImpl::tromp_taylor_score(Color color, int8_t *board) const {
+    PlayerMap<int> score = {
+        /* Color::WHITE, */ 0,
+        /* Color::BLACK, */ 0
     };
 
     for (Color c : {color, opposite_color(color)}) {
@@ -175,6 +167,8 @@ double StateImpl::tromp_taylor_score(Color color) const {
         while (not queue.empty()) {
             Move v(queue.front()); queue.pop();
             score[c] += 1;
+            if (board)
+                board[v.raw()] += static_cast<int8_t>(c); // cancel if both colors reach
 
             for_each_4nbr(v, [&] (Move const& nbr) {
                 if (visited.count(nbr) == 0 && chain_group_.stone_at(nbr) == Color::EMPTY) {
@@ -193,3 +187,13 @@ ZobristHash::ValueType StateImpl::hash() const {
 }
 
 }
+
+std::string cygo::StateImpl::info() const {
+    std::string cg = "";
+    for_each_coordinate(board_size_, [&] (Move const& v) {
+        auto color = chain_group_.stone_at(v);
+        cg += "W.B"[1 + (int)color];
+    });
+    return cg;
+}
+

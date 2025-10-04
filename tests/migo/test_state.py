@@ -5,6 +5,7 @@ import numpy.testing as npt
 
 from migo import State, Color, IllegalMoveError, all_coordinates
 from migo.state import parse
+import cygo
 
 
 def random_state(seed=None):
@@ -291,14 +292,14 @@ class TestEye:
 class TestLiberties:
     def test_liberty_1(self):
         state, moves = parse(
-            ". . . . . . . . .|" 
-            ". B W . . . . . .|" 
-            ". B B B . . . . .|" 
-            ". . . . . . . . .|" 
-            ". . . . . . . . .|" 
-            ". . . . . . . . .|" 
-            ". . . . . . W W .|" 
-            ". . . . . . . W .|" 
+            ". . . . . . . . .|"
+            ". B W . . . . . .|"
+            ". B B B . . . . .|"
+            ". . . . . . . . .|"
+            ". . . . . . . . .|"
+            ". . . . . . . . .|"
+            ". . . . . . W W .|"
+            ". . . . . . . W .|"
             ". . . . . . . . .|"
         )
 
@@ -474,7 +475,8 @@ class TestLadder:
         state.make_move(moves['c'])
         state.current_player = Color.WHITE
 
-        # both 'a' and 'b' should be considered escape moves for white after 'O' at c
+        # both 'a' and 'b' should be considered escape moves
+        # for white after 'O' at c
         assert state.is_ladder_escape(moves['a'])
         assert state.is_ladder_escape(moves['b'], prey=moves['c'])
 
@@ -599,3 +601,54 @@ def test_consistent_with_cygo():
             assert cm.is_pass
         else:
             assert pm == (cm.row, cm.col)
+
+
+def test_is_suicide():
+    state, moves = parse(
+        ". W W B|"
+        "W W B .|"
+        "W W W W|"
+        "W W W W|",
+        next_color=Color.BLACK
+    )
+
+    cstate = state.to_cygo()
+    ul = cygo.Move.from_coordinate(0, 0, 4)
+    assert cstate.is_suicide_move(ul)
+    assert not cstate.is_suicide_move(ul, cygo.WHITE)
+
+    br = cygo.Move.from_coordinate(1, 3, 4)
+    assert cstate.is_suicide_move(br, cygo.BLACK)
+    assert not cstate.is_suicide_move(br, cygo.WHITE)
+
+
+def test_tromp_taylor():
+    state = cygo.State(board_size=9, komi=0)
+    assert state.tromp_taylor_score() == 0
+    colors = state.tromp_taylor_fill()
+    assert colors.max() == 0 and colors.min() == 0
+
+    state.make_move((3, 4))
+    assert state.tromp_taylor_score() == -81
+    assert state.tromp_taylor_score(cygo.BLACK) == 81
+    assert state.tromp_taylor_score(cygo.WHITE) == -81
+
+    assert state.tromp_taylor_fill().sum() == 81
+    state.make_move(None)
+    assert state.tromp_taylor_fill().sum() == 81
+
+
+def test_eye_like_cygo():
+    state, moves = parse(
+        ". B . B .|"
+        "B a B b B|"
+        ". B . B .|"
+        "B W . B .|"
+        "c B W B .|"
+    )
+
+    import cygo
+    state = state.to_cygo()
+    assert state.is_eye_like(moves['a'], cygo.BLACK)
+    assert state.is_eye_like(moves['b'], cygo.BLACK)
+    assert not state.is_eye_like(moves['c'], cygo.BLACK)
