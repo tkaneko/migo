@@ -64,4 +64,4 @@ class TestGtpUtils:
             move_to_str((25, 25))
 
         with pytest.raises(ValueError):
-            move_to_str([0, 0])
+            move_to_str([0, 0]) # ty: ignore[invalid-argument-type]

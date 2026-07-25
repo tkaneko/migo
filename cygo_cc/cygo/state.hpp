@@ -38,9 +38,9 @@ public:
      */
     void drop_history();
 
-    std::unordered_set<Move> legal_moves(Color c, bool include_eyeish = false) const;
+    std::vector<Move> legal_moves(Color c, bool include_eyeish = false) const;
 
-    bool is_legal(Move const& move, Color player) const;
+    bool is_legal(Move const& move, Color player=Color::EMPTY) const;
     bool is_suicide_move(Move const& v, Color player) const;
     bool is_eye_like(Move v, Color player=Color::EMPTY) const;
 
@@ -65,9 +65,10 @@ public:
     ZobristHash::ValueType hash() const;
 
     std::string info() const;
+
 public:
     double komi;
-    Color current_player;
+    Color current_player;       // public!
 
 private:
     class History;

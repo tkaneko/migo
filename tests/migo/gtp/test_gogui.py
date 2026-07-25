@@ -7,7 +7,8 @@ from migo.gtp.gogui import GoGuiGTPRunner, CommandType, GoGuiParam, GoGuiParams
 class TestGoGuiGTPRunner:
 
     @pytest.fixture(scope='class', autouse=True)
-    def gtp_runner(self):
+    @classmethod
+    def gtp_runner(cls):
         runner = GoGuiGTPRunner()
 
         yield runner
@@ -16,7 +17,7 @@ class TestGoGuiGTPRunner:
         assert 'gogui_analyze_commands' in gtp_runner._callbacks
 
     def test_add_analyze_command(self, gtp_runner):
-        gtp_runner.add_analyze_callback(CommandType.NONE, 'command', lambda *args: (Status.success, ""))
+        gtp_runner.add_analyze_callback(CommandType.NONE, 'command', lambda *_args: (Status.success, ""))
 
         assert 'command' in gtp_runner.list_commands
 

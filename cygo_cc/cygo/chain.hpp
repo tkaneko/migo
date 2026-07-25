@@ -3,17 +3,16 @@
 
 #include "move.hpp"
 
-#include <list>
-
 namespace cygo {
 
 class Chain {
 public:
     static Chain NIL_CHAIN;
+    int16_t head=-1, tail=-1;       // for coordination with VertexList
 
     Chain();
 
-    explicit Chain(Move const& v);
+    Chain(Move const& v, int id);
 
     void add_adjacent_opponent(Move const& v);
     void add_adjacent_ally(Move const& v);
@@ -24,26 +23,24 @@ public:
     bool is_captured() const;
     bool is_in_atari() const;
 
-    Move atari_vertex() const;
-
-    std::list<Move> const& members() const;
+    Move atari_vertex(int board_size) const;
 
     int liberty_count() const;
-    int size() const;
-
-    bool equals(const Chain& other);  // slow, intended only for tests
 
     int hash() const;
 
     std::string to_string() const;
+    size_t size2() const {
+        if (head < 0) return 0;
+        if (head == tail) return 1;
+        return 2;  // or more
+    }
 
 private:
     void add_liberty(Move const& v);
     void subtract_liberty(Move const &v);
 
 private:
-    std::list<Move> members_;
-
     int liberty_count_;
     int liberty_sum_;
     int liberty_sum_sq_;

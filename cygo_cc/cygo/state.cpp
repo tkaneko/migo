@@ -100,7 +100,7 @@ void State::drop_history() {
     last_move_ = Move::INVALID;
 }  
 
-std::unordered_set<Move> State::legal_moves(Color c, bool include_eyes) const {
+std::vector<Move> State::legal_moves(Color c, bool include_eyes) const {
     if (c == Color::EMPTY) {
         c = current_player;
     }
@@ -158,14 +158,14 @@ bool State::superko_rule() const {
     return state_->superko_rule();
 }
 
-double State::tromp_taylor_score(Color c, int8_t *board_zero_filled) const {
+double State::tromp_taylor_score(Color c, int8_t* board_zero_filled) const {
     if (c == Color::EMPTY) {
         c = current_player;
     }
 
     double score = state_->tromp_taylor_score(c, board_zero_filled);
 
-    return (c == Color::BLACK) ? score - komi : score + komi;
+    return (c == Color::BLACK) ? (score - komi) : (score + komi);
 }
 
 Move State::last_move() const {
@@ -184,7 +184,7 @@ std::string State::to_string() const {
     os << ((board_size() < 10) ? " " : "  ");
 
     for (int col = 0; col < board_size(); ++col) {
-        os << " " << COLUMNS[col] << " ";
+        os << " " << COLUMNS[col] << (col == board_size() - 1 ? "" : " ");
     }
 
     os << std::endl;
@@ -226,7 +226,7 @@ std::string State::to_string() const {
     os << ((board_size() < 10) ? " " : "  ");
 
     for (int col = 0; col < board_size(); ++col) {
-        os << " " << COLUMNS[col] << " ";
+        os << " " << COLUMNS[col] << (col == board_size() - 1 ? "" : " ");
     }
 
     os << std::endl;

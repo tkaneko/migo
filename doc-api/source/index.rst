@@ -13,7 +13,7 @@ Main classes and functions
    :maxdepth: 2
 
    migo
-   cygo
+   migo.cygo
 
 Utilities
 ----------

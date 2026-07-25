@@ -7,6 +7,6 @@ WIP.
 
 ## api doc
 
-[api 0.1.3](https://game.c.u-tokyo.ac.jp/migo-api/0-1-3/)
+[api 0.1.5](https://game.c.u-tokyo.ac.jp/migo-api/0-1-5/)
 
 

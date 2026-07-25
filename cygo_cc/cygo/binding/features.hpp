@@ -38,20 +38,21 @@ collate(pybind11::array_t<int> const& indices,
         bool correct_invalid_index=false
         );
 
-std::tuple<pybind11::array_t<int8_t>, pybind11::array_t<int16_t>, pybind11::array_t<int8_t>, pybind11::array_t<float_t>>
-collatez(pybind11::array_t<int> const& indices,
-         int history_n, int board_size,
-         pybind11::array_t<int32_t> const& move_offset,
-         pybind11::array_t<int16_t> const& game_moves,
-         pybind11::array_t<int8_t> const& winner,
-         pybind11::array_t<int32_t> const& data_offset,
-         int ignore_opening_moves,
-         // for zone
-         pybind11::array_t<int8_t> const& zones, // board * board * 2
-         pybind11::array_t<float_t> const& zone_score, // games
-         // args with default value
-         bool correct_invalid_index=false
-         );
+std::tuple<pybind11::array_t<int8_t>, pybind11::array_t<int16_t>, pybind11::array_t<int8_t>, pybind11::array_t<int8_t>, pybind11::array_t<float_t>>
+collate_id(pybind11::array_t<int> const& indices,
+           int history_n, int board_size,
+           pybind11::array_t<int32_t> const& move_offset,
+           pybind11::array_t<int16_t> const& game_moves,
+           pybind11::array_t<int8_t> const& winner,
+           pybind11::array_t<int32_t> const& data_offset,
+           int ignore_opening_moves,
+           // for id
+           std::vector<int8_t> const& enabled_colors,
+           int model_n, 
+           pybind11::array_t<int8_t> const& ids, // games
+           pybind11::array_t<int8_t> const& aux_plane_labels, // games
+           pybind11::array_t<float_t> const& zone_score // games
+           );
 
 std::tuple<pybind11::array_t<int8_t>, pybind11::array_t<int16_t>, pybind11::array_t<int8_t>, pybind11::array_t<int8_t>, pybind11::array_t<float_t>>
 collate_ext(pybind11::array_t<int> const& indices,
@@ -81,6 +82,9 @@ std::pair<pybind11::array_t<int8_t>, pybind11::array_t<int8_t>>
 batch_features_with_zone(std::vector<State> const& state_list, int history_n,
                          std::vector<pybind11::array_t<int8_t>> & zone_list);
 
+std::pair<pybind11::array_t<int8_t>, pybind11::array_t<int8_t>>
+batch_features_with_id(std::vector<State> const& state_list, int history_n,
+                       int model_id, int model_n);
   
 }  // namespace cygo
 

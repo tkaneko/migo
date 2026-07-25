@@ -21,6 +21,9 @@ public:
     static Move from_coordinate(int row, int column, int board_size);
     static Move from_gtp_string(std::string const& str, int board_size);
     static Move from_raw(int raw, int board_size);
+    static Move from_raw_or_pass(int raw, int board_size) {
+        return (raw == PASS.raw()) ? PASS : from_raw(raw, board_size);
+    }
 
     static Move ANY;
     static Move PASS;
@@ -42,6 +45,7 @@ public:
 
     bool is_on_edge() const;
     bool is_at_corner() const;
+    bool is_pass() const { return *this == PASS; }
 
     std::string to_string() const;
 };

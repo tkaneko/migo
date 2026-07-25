@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <stdexcept>
 
 #include "neighbor_counter.hpp"
@@ -8,17 +9,26 @@ constexpr int black_shift = 0;
 constexpr int white_shift = 4;
 constexpr int empty_shift = 8;
 
+#ifndef CYGO_32BIT_NEIGHBOR_BITS
+static_assert(sizeof(neighbor_bits_t) == sizeof(uint16_t));
+constexpr uint16_t black_increment = 0xFF'01;
+constexpr uint16_t white_increment = 0xFF'10;
+constexpr uint16_t empty_increment = 0xFF'11;
+
+constexpr uint16_t initial_bits = 0b0100u << empty_shift;
+#else
+static_assert(sizeof(neighbor_bits_t) == sizeof(uint32_t));
 constexpr unsigned int black_increment = 0xFF'FF'FF'01;
 constexpr unsigned int white_increment = 0xFF'FF'FF'10;
 constexpr unsigned int empty_increment = 0xFF'FF'FF'11;
 
 constexpr unsigned int initial_bits = 0b0100u << empty_shift;
-
+#endif
 NeighborCounter::NeighborCounter() : bits_(initial_bits) { }
 
-NeighborCounter::NeighborCounter(unsigned int bits) : bits_(bits) { }
+NeighborCounter::NeighborCounter(neighbor_bits_t bits) : bits_(bits) { }
 
-NeighborCounter NeighborCounter::create(unsigned int black, unsigned int white, unsigned int empty) {
+NeighborCounter NeighborCounter::create(neighbor_bits_t black, neighbor_bits_t white, neighbor_bits_t empty) {
     return NeighborCounter(
             (black << black_shift) + (white << white_shift) + (empty << empty_shift)
     );
@@ -29,11 +39,11 @@ NeighborCounter NeighborCounter::empty() {
 }
 
 NeighborCounter NeighborCounter::empty_on_edge() {
-    return NeighborCounter(initial_bits + empty_increment);
+    return NeighborCounter(static_cast<neighbor_bits_t>(initial_bits + empty_increment));
 }
 
 NeighborCounter NeighborCounter::empty_at_corner() {
-    return NeighborCounter(initial_bits + empty_increment + empty_increment);
+    return NeighborCounter(static_cast<neighbor_bits_t>(initial_bits + empty_increment + empty_increment));
 }
 
 void NeighborCounter::increment(Color c) {

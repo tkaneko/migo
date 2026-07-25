@@ -13,3 +13,4 @@ set_target_properties(${module_name} PROPERTIES CXX_VISIBILITY_PRESET default)
 add_dependencies(${module_name} cygo-core)
 
 target_link_libraries(${module_name} PRIVATE cygo-core)
+install(TARGETS ${module_name} LIBRARY DESTINATION "migo")

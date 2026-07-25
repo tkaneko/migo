@@ -1,15 +1,16 @@
 import re
-
 from typing import Optional
 
-from migo import Color, Move
+from ..misc import Color, Move
 
 _LETTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZ'  # excluding 'i'
 _LETTERS_cgoban = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'  # including 'i'
-_MATCHER = re.compile(r"^(?P<alphabet>([A-HJ-Z]))(?P<numeric>([\d]{1,2}))$",
-                      re.IGNORECASE)
-_MATCHER_cgoban = re.compile(r"^(?P<alphabet>([A-Z]))(?P<col>([A-Z]))$",
-                             re.IGNORECASE)  # cgoban
+_MATCHER = re.compile(
+    r'^(?P<alphabet>([A-HJ-Z]))(?P<numeric>([\d]{1,2}))$', re.IGNORECASE
+)
+_MATCHER_cgoban = re.compile(
+    r'^(?P<alphabet>([A-Z]))(?P<col>([A-Z]))$', re.IGNORECASE
+)  # cgoban
 
 
 def parse_color(color_str: str) -> Color:
@@ -34,7 +35,7 @@ def parse_color(color_str: str) -> Color:
     if color_str.lower() == 'w':
         return Color.WHITE
 
-    raise ValueError("Cannot parse string `%s`" % color_str)
+    raise ValueError('Cannot parse string `%s`' % color_str)
 
 
 def parse_move(move_str: str) -> Move:
@@ -75,7 +76,7 @@ def parse_move(move_str: str) -> Move:
         if 0 <= row < 19 and 0 <= col < 19:
             return row, col
 
-    raise ValueError("Cannot parse string `%s`" % move_str)
+    raise ValueError('Cannot parse string `%s`' % move_str)
 
 
 def move_to_str(move: Move) -> Optional[str]:
@@ -92,15 +93,15 @@ def move_to_str(move: Move) -> Optional[str]:
     'J1'
     """
     if move is None:
-        return "PASS"
+        return 'PASS'
 
     if not isinstance(move, tuple):
-        raise ValueError("Only tuples are acceptable")
+        raise ValueError('Only tuples are acceptable')
 
     if not (0 <= move[0] < len(_LETTERS) and 0 <= move[1] < len(_LETTERS)):
-        raise ValueError("Invalid move `%s`" % (move,))
+        raise ValueError('Invalid move `%s`' % (move,))
 
     row = _LETTERS[move[0]]
     col = move[1] + 1
 
-    return "%s%s" % (row, col)
+    return '%s%s' % (row, col)

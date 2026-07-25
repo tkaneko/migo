@@ -1,5 +1,5 @@
 from migo.gtp.gfx import GFX, GFXSymbol, GFXPlayer
-
+from typing import no_type_check
 
 class TestGFX:
 
@@ -17,13 +17,15 @@ class TestGFX:
 
         assert 'COLOR #0000FF A1\nCOLOR #00FF00 A2' == gfx.output()
 
+    @no_type_check
     def test_square(self):
         gfx = GFX()
-        gfx.set_symbol('A1', GFXSymbol.square)
+        gfx.set_symbol('A1', GFXSymbol.square) # ty complains
         gfx.set_symbol('A2', GFXSymbol.square)
 
         assert 'SQUARE A1 A2' == gfx.output()
 
+    @no_type_check
     def test_mark(self):
         gfx = GFX()
         gfx.set_symbol('A1', GFXSymbol.mark)
@@ -31,6 +33,7 @@ class TestGFX:
 
         assert 'MARK A1 A2' == gfx.output()
 
+    @no_type_check
     def test_triangle(self):
         gfx = GFX()
         gfx.set_symbol('A1', GFXSymbol.triangle)
@@ -38,6 +41,7 @@ class TestGFX:
 
         assert 'TRIANGLE A1 A2' == gfx.output()
 
+    @no_type_check
     def test_circle(self):
         gfx = GFX()
         gfx.set_symbol('A1', GFXSymbol.circle)
@@ -45,6 +49,7 @@ class TestGFX:
 
         assert 'CIRCLE A1 A2' == gfx.output()
 
+    @no_type_check
     def test_white(self):
         gfx = GFX()
         gfx.set_symbol('A1', GFXSymbol.white)
@@ -52,6 +57,7 @@ class TestGFX:
 
         assert 'WHITE A1 A2' == gfx.output()
 
+    @no_type_check
     def test_black(self):
         gfx = GFX()
         gfx.set_symbol('A1', GFXSymbol.black)
@@ -66,6 +72,7 @@ class TestGFX:
 
         assert 'INFLUENCE A1 1 A2 1' == gfx.output()
 
+    @no_type_check
     def test_variation(self):
         gfx = GFX()
         gfx.add_variation(GFXPlayer.black, 'A1')

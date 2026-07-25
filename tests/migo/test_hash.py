@@ -3,7 +3,7 @@ import random
 import pytest
 
 from migo import Color, all_coordinates
-from migo.hash import ZobristHash, NeighborTable
+from migo.hash import NeighborTable, ZobristHash
 
 
 @pytest.mark.parametrize("color", [Color.BLACK, Color.WHITE])
@@ -24,7 +24,7 @@ def test_zobrist_hash(color):
     assert hash1.value == hash2.value
 
 
-@pytest.fixture(scope='module', autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def table():
     table = NeighborTable(size=9)
 
@@ -39,7 +39,9 @@ def test_neighbors_crosswise(table):
     assert len(expected) == len(actual)
 
 
-def test_neighbors_crosswise_when_corner_given_then_returns_two_elements_only(table):
+def test_neighbors_crosswise_when_corner_given_then_returns_two_elements_only(
+    table,
+):
     point = (0, 0)
     expected = [(1, 0), (0, 1)]
     actual = table.neighbors_crosswise(point)
@@ -56,7 +58,9 @@ def test_neighbors_diagonal(table):
     assert len(expected) == len(actual)
 
 
-def test_neighbors_diagonal_when_corner_given_then_returns_one_element_only(table):
+def test_neighbors_diagonal_when_corner_given_then_returns_one_element_only(
+    table,
+):
     point = (0, 0)
     expected = [(1, 1)]
     actual = table.neighbors_diagonal(point)

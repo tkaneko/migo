@@ -3,11 +3,9 @@
 
 #include "chain_group.hpp"
 #include "color.hpp"
-#include "neighbor_counter.hpp"
 #include "move.hpp"
 #include "zobrist_hash.hpp"
 
-#include <unordered_set>
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -21,7 +19,7 @@ public:
     void make_move(Color c, Move const& v);
     void drop_history();
 
-    std::unordered_set<Move> legal_moves(Color c, bool include_eye_likes) const;
+    std::vector<Move> legal_moves(Color c, bool include_eye_likes) const;
 
     bool is_eye_like(Color c, Move const &v) const;
     bool is_legal(Color c, Move const& v, std::string *msg=nullptr) const;

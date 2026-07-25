@@ -1,3 +1,6 @@
+#include <optional>
+
+#include <pybind11/cast.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/stl.h>
@@ -106,12 +109,10 @@ void setup_move(py::module& m) {
             .def_property_readonly("s", &cygo::Move::s, "move at neighbor")
             .def_property_readonly("w", &cygo::Move::w, "move at neighbor")
             .def_property_readonly("e", &cygo::Move::e, "move at neighbor")
+            .def_property_readonly("is_pass", &cygo::Move::is_pass, "true if pass")
             .def_property_readonly("is_on_edge", &cygo::Move::is_on_edge, "true if on edge")
             .def_property_readonly("is_at_corner", &cygo::Move::is_at_corner,
                                    "true if on any of four corners")
-            .def_property_readonly("is_pass", [](cygo::Move const& v) -> bool {
-                return v == cygo::Move::PASS;
-            }, "true if pass")
             .def_property_readonly("gtp", [](cygo::Move const& v) -> std::string {
                 if (v == cygo::Move::PASS) {
                     return "PASS";
@@ -148,30 +149,30 @@ void setup_state(py::module& m) {
                 ":param max_history_n: int = 7\n\n"
                 ">>> state = cygo.State(4)\n"
                 ">>> print(state)\n"
-                "  A  B  C  D \n"
+                "  A  B  C  D\n"
                 "4 .  .  .  . 4\n"
                 "3 .  .  .  . 3\n"
                 "2 .  .  .  . 2\n"
                 "1 .  .  .  . 1\n"
-                "  A  B  C  D \n"
+                "  A  B  C  D\n"
                 "...\n"
                 ">>> state.make_move((2, 1))\n"
                 ">>> print(state)\n"
-                "  A  B  C  D \n"
+                "  A  B  C  D\n"
                 "4 .  .  .  . 4\n"
                 "3 . (X) .  . 3\n"
                 "2 .  .  .  . 2\n"
                 "1 .  .  .  . 1\n"
-                "  A  B  C  D \n"
+                "  A  B  C  D\n"
                 "...\n"
                 ">>> state.make_move('c3')\n"
                 ">>> print(state)\n"
-                "  A  B  C  D \n"
+                "  A  B  C  D\n"
                 "4 .  .  .  . 4\n"
                 "3 .  X (O) . 3\n"
                 "2 .  .  .  . 2\n"
                 "1 .  .  .  . 1\n"
-                "  A  B  C  D \n"
+                "  A  B  C  D\n"
                 "...\n"
                 ">>> state.last_move\n"
                 "(2, 2)\n"
@@ -247,7 +248,7 @@ void setup_state(py::module& m) {
                      return ret;
                  },
                  "Generate legal moves for the current state",
-                 "color"_a = cygo::Color::EMPTY, "include_eyeish"_a = true
+                 py::arg_v("color", cygo::Color::EMPTY, "empty"), "include_eyeish"_a = true
             )
             .def("legal_indices",
                  [] (cygo::State const& state, cygo::Color c, bool include_eyeish) {
@@ -264,46 +265,46 @@ void setup_state(py::module& m) {
                      return ret;
                  },
                  "Generate legal indices for the current state",
-                 "color"_a = cygo::Color::EMPTY, "include_eyeish"_a = true
+                 py::arg_v("color", cygo::Color::EMPTY, "empty"), "include_eyeish"_a = true
             )
             .def("is_legal",
-                 [](cygo::State const& state, cygo::Move const* m, cygo::Color c) {
-                     if (m == nullptr) {
+                 [](cygo::State const& state, std::optional<cygo::Move> m, cygo::Color c) {
+                     if (!m) {
                          return true;
                      }
 
                      return state.is_legal(*m, c);
                  },
-                 "move"_a, "color"_a = cygo::Color::EMPTY
+                 "move"_a, py::arg_v("color", cygo::Color::EMPTY, "empty")
             )
             .def("is_legal",
                  [](cygo::State const& state, std::string const& m, cygo::Color c) {
                      return state.is_legal(cygo::Move::from_gtp_string(m, state.board_size()), c);
                  },
-                 "move"_a, "color"_a = cygo::Color::EMPTY
+                 "move"_a, py::arg_v("color", cygo::Color::EMPTY, "empty")
             )
             .def("is_legal",
                  [](cygo::State const& state, std::pair<int, int> const& v, cygo::Color c) {
                      return state.is_legal(cygo::Move::from_coordinate(v.first, v.second, state.board_size()), c);
                  },
-                 "move"_a, "color"_a = cygo::Color::EMPTY,
+                 "move"_a, py::arg_v("color", cygo::Color::EMPTY, "empty"),
                  "Return move is legal"
             )
             .def("is_eye_like", &cygo::State::is_eye_like,
-                 "move"_a, "color"_a=cygo::Color::EMPTY
+                 "move"_a, py::arg_v("color", cygo::Color::EMPTY, "empty")
             )
             .def("is_eye_like",
                  [](cygo::State const& s, std::pair<int, int> const& v, cygo::Color c) {
                    auto move = cygo::Move::from_coordinate(v.first, v.second, s.board_size());
                    return s.is_eye_like(move, c);
                  },
-                 "move"_a, "color"_a=cygo::Color::EMPTY
+                 "move"_a, py::arg_v("color", cygo::Color::EMPTY, "empty")
             )
             .def("is_suicide_move",
                  [](cygo::State const& state, cygo::Move const& v, cygo::Color c) {
                      return state.is_suicide_move(v, c);
                  },
-                 "move"_a, "color"_a = cygo::Color::EMPTY,
+                 "move"_a, py::arg_v("color", cygo::Color::EMPTY, "empty"),
                  "Return whether move is suicide"
             )
             .def("tromp_taylor_score",
@@ -315,60 +316,60 @@ void setup_state(py::module& m) {
                  ">>> for m in moves:\n"
                  "...   state.make_move(m)\n"
                  ">>> print(state)\n"
-                 "  A  B  C  D  E \n"
+                 "  A  B  C  D  E\n"
                  "5 .  .  .  .  . 5\n"
                  "4 .  .  .  .  . 4\n"
                  "3 O  O  O  O (O)3\n"
                  "2 X  X  X  X  X 2\n"
                  "1 .  .  .  .  . 1\n"
-                 "  A  B  C  D  E \n"
-                 "...\n"
+                 "  A  B  C  D  E\n"
+                 "<BLANKLINE>\n"
                  ">>> state.tromp_taylor_score(cygo.Color.BLACK)\n"
                  "-6.0\n"
                  ">>> state.tromp_taylor_score()\n"
                  "-6.0\n"
                  ">>> state.make_move('C1')\n"
                  ">>> print(state)\n"
-                 "  A  B  C  D  E \n"
+                 "  A  B  C  D  E\n"
                  "5 .  .  .  .  . 5\n"
                  "4 .  .  .  .  . 4\n"
                  "3 O  O  O  O  O 3\n"
                  "2 X  X  X  X  X 2\n"
                  "1 .  . (X) .  . 1\n"
-                 "  A  B  C  D  E \n"
-                 "...\n"
+                 "  A  B  C  D  E\n"
+                 "<BLANKLINE>\n"
                  ">>> state.tromp_taylor_score(cygo.Color.BLACK)\n"
                  "-6.0\n"
                  ">>> state.tromp_taylor_score()\n"
                  "6.0\n"
                  ">>> state.make_move('D1')\n"
                  ">>> print(state)\n"
-                 "  A  B  C  D  E \n"
+                 "  A  B  C  D  E\n"
                  "5 .  .  .  .  . 5\n"
                  "4 .  .  .  .  . 4\n"
                  "3 O  O  O  O  O 3\n"
                  "2 X  X  X  X  X 2\n"
                  "1 .  .  X (O) . 1\n"
-                 "  A  B  C  D  E \n"
-                 "...\n"
+                 "  A  B  C  D  E\n"
+                 "<BLANKLINE>\n"
                  ">>> state.tromp_taylor_score(cygo.Color.BLACK)\n"
                  "-9.0\n"
                  ">>> state.make_move('E1')\n"
                  ">>> print(state)\n"
-                 "  A  B  C  D  E \n"
+                 "  A  B  C  D  E\n"
                  "5 .  .  .  .  . 5\n"
                  "4 .  .  .  .  . 4\n"
                  "3 O  O  O  O  O 3\n"
                  "2 X  X  X  X  X 2\n"
                  "1 .  .  X  . (X)1\n"
-                 "  A  B  C  D  E \n"
-                 "...\n"
+                 "  A  B  C  D  E\n"
+                 "<BLANKLINE>\n"
                  ">>> state.tromp_taylor_score(cygo.Color.BLACK)\n"
                  "-6.0\n",
-                 "color"_a = cygo::Color::EMPTY
+                 py::arg_v("color", cygo::Color::EMPTY, "empty")
             )
             .def("tromp_taylor_fill",
-                 [](const cygo::State& s) {
+                 [](const cygo::State& s) -> py::array_t<int8_t> {
                        auto N = s.board_size();
                        py::array_t<int8_t> ret_py(N * N);
                        auto ret = ret_py.mutable_unchecked<1>();
@@ -402,11 +403,11 @@ void setup_state(py::module& m) {
                  },
                  "Apply move to the state as color\n\n"
                  ":param index: index acceptable by :cpp:func:`cygo::Move::from_raw` or -1 for pass\n",
-                 "index"_a, "color"_a = cygo::Color::EMPTY
+                 "index"_a, py::arg_v("color", cygo::Color::EMPTY, "empty")
             )
             .def("make_move",
-                 [] (cygo::State& state, cygo::Move const* m, cygo::Color c) {
-                     if (m == nullptr) {
+                 [] (cygo::State& state, std::optional<cygo::Move> m, cygo::Color c) {
+                     if (! m) {
                          state.make_move(cygo::Move::PASS, c);
                      }
                      else {
@@ -415,7 +416,7 @@ void setup_state(py::module& m) {
                  },
                  "Apply move to the state as color\n\n"
                  ":param move: None for pass\n",
-                 "move"_a.none(true), "color"_a = cygo::Color::EMPTY
+                 "move"_a, py::arg_v("color", cygo::Color::EMPTY, "empty")
             )
             .def("make_move",
                  [] (cygo::State& state, std::string const& move, cygo::Color c) {
@@ -423,14 +424,14 @@ void setup_state(py::module& m) {
                  },
                  "Apply move to the state as color\n\n",
                  ":param move: string acceptable by :py:meth:`cygo.Move.from_gtp_string`\n",
-                 "move"_a, "color"_a = cygo::Color::EMPTY
+                 "move"_a, py::arg_v("color", cygo::Color::EMPTY, "empty")
             )
             .def("make_move",
                  [] (cygo::State& state, std::pair<int, int> const& v, cygo::Color c) {
                     state.make_move(cygo::Move::from_coordinate(v.first, v.second, state.board_size()), c);
                  },
                  "Apply move to the state as color",
-                 "move"_a, "color"_a = cygo::Color::EMPTY
+                 "move"_a, py::arg_v("color", cygo::Color::EMPTY, "empty")
             )
             .def("drop_history",
                  &cygo::State::drop_history,
@@ -481,14 +482,14 @@ void setup_features(py::module& m) {
                        return cygo::board_i(state, i, c);
                    },
                    "Get the i-th before board feature. If c = Color.EMPTY, returns both color's features",
-                   "state"_a, "i"_a, "color"_a = cygo::Color::EMPTY
+                   "state"_a, "i"_a, py::arg_v("color", cygo::Color::EMPTY, "empty")
     );
     m_features.def("history_n",
                    [] (cygo::State const& state, int n, cygo::Color c) {
                        return cygo::history_n(state, n, c);
                    },
                    "Get the board history from n-th before. If c = Color.EMPTY, returns both color's features",
-                   "state"_a, "i"_a, "color"_a = cygo::Color::EMPTY
+                   "state"_a, "i"_a, py::arg_v("color", cygo::Color::EMPTY, "empty")
     );
 
     m_features.def("color_black", &cygo::black);
@@ -508,16 +509,6 @@ void setup_features(py::module& m) {
                    "correct_invalid_index"_a=false
     );
 
-    m_features.def("collatez", cygo::collatez,
-                   "collate function for ZoneDataset, implemented in C++",
-                   "indices"_a,
-                   "history_n"_a, "board_size"_a,
-                   "move_offset"_a.noconvert(), "game_moves"_a.noconvert(), "winner"_a.noconvert(),
-                   "data_offset"_a.noconvert(), "ignore_opening_moves"_a,
-                   "zones"_a.noconvert(), "zone_score"_a.noconvert(),
-                   "correct_invalid_index"_a=false
-    );
-
     m_features.def("collate_ext", cygo::collate_ext,
                    "collate function for ExtendedDataset, implemented in C++",
                    "indices"_a,
@@ -531,7 +522,7 @@ void setup_features(py::module& m) {
     );
 
     m_features.def("make_territory", cygo::make_territory,
-                   "compute territory at game end\n\n"
+                   "compute territory at each game end\n\n"
                    "return ndarray with dimension games*(board_size**2 + 1), int8",
                    "board_size"_a,
                    "move_offset"_a.noconvert(), "game_moves"_a.noconvert()

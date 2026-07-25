@@ -2,18 +2,15 @@ import numpy as np
 import numpy.testing as npt
 import pytest
 
-from migo import State, Color, all_coordinates
-from migo.features.utils import Order
+from migo import Color, State, all_coordinates
 from migo.features import migo as F
+from migo.features.utils import Order
 from migo.state import parse
 
 
 class TestFeatures:
-
     def test_stone_color(self):
-        state, _ = parse("B B B|"
-                         "W W .|"
-                         ". . .|")
+        state, _ = parse("B B B|W W .|. . .|")
 
         expected_black = np.array([[1, 1, 1], [0, 0, 0], [0, 0, 0]])
         expected_white = np.array([[0, 0, 0], [1, 1, 0], [0, 0, 0]])
@@ -53,9 +50,7 @@ class TestFeatures:
             npt.assert_array_equal(expected_plane, planes[:, :, i])
 
     def test_liberties(self):
-        state, _ = parse("B W W|"
-                         ". B W|"
-                         ". . W|")
+        state, _ = parse("B W W|. B W|. . W|")
 
         expected_plane1 = np.array([[1, 1, 1], [0, 0, 1], [0, 0, 1]])
         expected_plane2 = np.array([[0, 0, 0], [0, 1, 0], [0, 0, 0]])
@@ -68,37 +63,51 @@ class TestFeatures:
         npt.assert_array_equal(expected_plane2, planes[:, :, 1])
 
     def test_capture_size(self):
-        state, moves = parse("B W W W B .|"
-                             "B W W W B .|"
-                             "1 W W W B .|"
-                             ". B B B B .|"
-                             ". . . B W B|"
-                             ". . . B W 2|")
+        state, _mves = parse(
+            "B W W W B .|"
+            "B W W W B .|"
+            "1 W W W B .|"
+            ". B B B B .|"
+            ". . . B W B|"
+            ". . . B W 2|"
+        )
 
         expected_planes = [
-            np.array([[0, 0, 0, 0, 0, 1],
-                      [0, 0, 0, 0, 0, 1],
-                      [0, 0, 0, 0, 0, 1],
-                      [1, 0, 0, 0, 0, 1],
-                      [1, 1, 1, 0, 0, 0],
-                      [1, 1, 1, 0, 0, 0]]),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 1],
+                    [1, 1, 1, 0, 0, 0],
+                    [1, 1, 1, 0, 0, 0],
+                ]
+            ),
             np.zeros((6, 6)),
-            np.array([[0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 1]]),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 1],
+                ]
+            ),
             np.zeros((6, 6)),
             np.zeros((6, 6)),
             np.zeros((6, 6)),
             np.zeros((6, 6)),
-            np.array([[0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [1, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0]])
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                ]
+            ),
         ]
 
         planes = F.capture_size(state, order=Order.HWC)
@@ -109,33 +118,47 @@ class TestFeatures:
             npt.assert_array_equal(expected_plane, planes[:, :, i])
 
     def test_self_atari_size(self):
-        state, _ = parse(". . 4 B W .|"
-                         "W B B W W .|"
-                         ". W W W . .|"
-                         ". W . . . .|"
-                         "W . . . . W|"
-                         ". B W . . .|")
+        state, _ = parse(
+            ". . 4 B W .|"
+            "W B B W W .|"
+            ". W W W . .|"
+            ". W . . . .|"
+            "W . . . . W|"
+            ". B W . . .|"
+        )
 
         expected_planes = [
-            np.array([[1, 0, 0, 0, 0, 1],
-                      [0, 0, 0, 0, 0, 0],
-                      [1, 0, 0, 0, 0, 0],
-                      [1, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 1]]),
-            np.array([[0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [1, 0, 0, 0, 0, 0]]),
+            np.array(
+                [
+                    [1, 0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 1],
+                ]
+            ),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0],
+                ]
+            ),
             np.zeros((6, 6)),
-            np.array([[0, 0, 1, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0]]),
+            np.array(
+                [
+                    [0, 0, 1, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                ]
+            ),
             np.zeros((6, 6)),
             np.zeros((6, 6)),
             np.zeros((6, 6)),
@@ -150,77 +173,105 @@ class TestFeatures:
             npt.assert_array_equal(expected_plane, planes[:, :, i])
 
     def test_liberties_after_move(self):
-        state, _ = parse("2 1 W W W B|"
-                         "2 W W W 2 2|"
-                         "3 3 7 3 4 3|"
-                         "3 8 B 8 6 3|"
-                         "3 7 B 6 B 4|"
-                         "7 B B B 8 B|", next_color=Color.BLACK)
+        state, _ = parse(
+            "2 1 W W W B|"
+            "2 W W W 2 2|"
+            "3 3 7 3 4 3|"
+            "3 8 B 8 6 3|"
+            "3 7 B 6 B 4|"
+            "7 B B B 8 B|",
+            next_color=Color.BLACK,
+        )
 
         expected_planes = [
             # 1 liberty
-            np.array([[0, 1, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0]]),
-
+            np.array(
+                [
+                    [0, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                ]
+            ),
             # 2 liberties
-            np.array([[1, 0, 0, 0, 0, 0],
-                      [1, 0, 0, 0, 1, 1],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0]]),
-
+            np.array(
+                [
+                    [1, 0, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 1, 1],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                ]
+            ),
             # 3 liberties
-            np.array([[0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [1, 1, 0, 1, 0, 1],
-                      [1, 0, 0, 0, 0, 1],
-                      [1, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0]]),
-
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [1, 1, 0, 1, 0, 1],
+                    [1, 0, 0, 0, 0, 1],
+                    [1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                ]
+            ),
             # 4 liberties
-            np.array([[0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 1, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 1],
-                      [0, 0, 0, 0, 0, 0]]),
-
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 1],
+                    [0, 0, 0, 0, 0, 0],
+                ]
+            ),
             # 5 liberties
-            np.array([[0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0]]),
-
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                ]
+            ),
             # 6 liberties
-            np.array([[0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 1, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0]]),
-
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                ]
+            ),
             # 7 liberties
-            np.array([[0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 1, 0, 0, 0, 0],
-                      [1, 0, 0, 0, 0, 0]]),
-
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 1, 0, 0, 0, 0],
+                    [1, 0, 0, 0, 0, 0],
+                ]
+            ),
             # >8 liberties
-            np.array([[0, 0, 0, 0, 0, 0],
-                      [0, 0, 0, 0, 0, 0],
-                      [0, 0, 1, 0, 0, 0],
-                      [0, 1, 0, 1, 0, 0],
-                      [0, 0, 0, 1, 0, 0],
-                      [0, 0, 0, 0, 1, 0]]),
+            np.array(
+                [
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 0],
+                    [0, 1, 0, 1, 0, 0],
+                    [0, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 1, 0],
+                ]
+            ),
         ]
 
         planes = F.liberties_after_move(state, order=Order.HWC)
@@ -231,21 +282,26 @@ class TestFeatures:
             npt.assert_array_equal(expected_plane, planes[:, :, i])
 
     def test_sensibleness(self):
-        state, _ = parse(". . . . W .|"
-                         ". . B B . W|"
-                         ". B . B . .|"
-                         ". B B B . .|"
-                         ". B . B . .|"
-                         ". B B . . .|", next_color=Color.BLACK)
+        state, _ = parse(
+            ". . . . W .|"
+            ". . B B . W|"
+            ". B . B . .|"
+            ". B B B . .|"
+            ". B . B . .|"
+            ". B B . . .|",
+            next_color=Color.BLACK,
+        )
 
-        expected_plane = np.array([
-            [1, 1, 1, 1, 0, 0],
-            [1, 1, 0, 0, 1, 0],
-            [1, 0, 0, 0, 1, 1],
-            [1, 0, 0, 0, 1, 1],
-            [1, 0, 0, 0, 1, 1],
-            [1, 0, 0, 1, 1, 1]
-        ])
+        expected_plane = np.array(
+            [
+                [1, 1, 1, 1, 0, 0],
+                [1, 1, 0, 0, 1, 0],
+                [1, 0, 0, 0, 1, 1],
+                [1, 0, 0, 0, 1, 1],
+                [1, 0, 0, 0, 1, 1],
+                [1, 0, 0, 1, 1, 1],
+            ]
+        )
 
         plane = F.sensibleness(state, order=Order.HWC)
 
@@ -262,20 +318,26 @@ class TestHistoryFeature:
         state.make_move((0, 1))  # White
         state.make_move((0, 2))  # Black
 
-        expected_2 = np.array([
-            [[0, 0, 0], [0, 0, 0], [0, 0, 0]],  # White board
-            [[1, 0, 0], [0, 0, 0], [0, 0, 0]],  # Black board
-        ])
+        expected_2 = np.array(
+            [
+                [[0, 0, 0], [0, 0, 0], [0, 0, 0]],  # White board
+                [[1, 0, 0], [0, 0, 0], [0, 0, 0]],  # Black board
+            ]
+        )
 
-        expected_1 = np.array([
-            [[0, 1, 0], [0, 0, 0], [0, 0, 0]],  # ditto
-            [[1, 0, 0], [0, 0, 0], [0, 0, 0]],
-        ])
+        expected_1 = np.array(
+            [
+                [[0, 1, 0], [0, 0, 0], [0, 0, 0]],  # ditto
+                [[1, 0, 0], [0, 0, 0], [0, 0, 0]],
+            ]
+        )
 
-        expected_0 = np.array([
-            [[0, 1, 0], [0, 0, 0], [0, 0, 0]],
-            [[1, 0, 1], [0, 0, 0], [0, 0, 0]],
-        ])
+        expected_0 = np.array(
+            [
+                [[0, 1, 0], [0, 0, 0], [0, 0, 0]],
+                [[1, 0, 1], [0, 0, 0], [0, 0, 0]],
+            ]
+        )
 
         expected_outbound = np.zeros((2, 3, 3))
 
@@ -287,7 +349,9 @@ class TestHistoryFeature:
         npt.assert_array_equal(expected_0, F.board_i(state, 0, order=Order.CHW))
 
         for n in range(3, 10):
-            npt.assert_array_equal(expected_outbound, F.board_i(state, n, order=Order.CHW))
+            npt.assert_array_equal(
+                expected_outbound, F.board_i(state, n, order=Order.CHW)
+            )
 
     def test_board_i_when_state_has_no_history(self):
         state = State(max_history_n=0)
@@ -300,32 +364,35 @@ class TestHistoryFeature:
 
 
 class TestLeelaFeature:
-
     def test_leela_board_initial_state(self):
         state = State(3, max_history_n=8)
 
-        npt.assert_equal(F.leela_board(state, order=Order.CHW, n=2),
-                         np.array([
-                             [[0, 0, 0],
-                              [0, 0, 0],
-                              [0, 0, 0]],
-                             [[0, 0, 0],
-                              [0, 0, 0],
-                              [0, 0, 0]],
-                             [[0, 0, 0],
-                              [0, 0, 0],
-                              [0, 0, 0]],
-                             [[0, 0, 0],
-                              [0, 0, 0],
-                              [0, 0, 0]],
-                         ]))
+        npt.assert_equal(
+            F.leela_board(state, order=Order.CHW, n=2),
+            np.array(
+                [
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                    [[0, 0, 0], [0, 0, 0], [0, 0, 0]],
+                ]
+            ),
+        )
 
     def test_leela_board_with_history(self):
         state = State(3, max_history_n=8)
 
-        moves = [(0, 0), (0, 1), (0, 2),
-                 (1, 0), (1, 1), (1, 2),
-                 (2, 0), (2, 1), (2, 2)]
+        moves = [
+            (0, 0),
+            (0, 1),
+            (0, 2),
+            (1, 0),
+            (1, 1),
+            (1, 2),
+            (2, 0),
+            (2, 1),
+            (2, 2),
+        ]
 
         for move in moves:
             state.make_move(move, Color.BLACK)
@@ -334,41 +401,20 @@ class TestLeelaFeature:
 
         expected_black_history = np.array(
             [
-                [[1, 1, 1],
-                 [1, 1, 1],
-                 [1, 1, 1]],
-
-                [[1, 1, 1],
-                 [1, 1, 1],
-                 [1, 1, 0]],
-
-                [[1, 1, 1],
-                 [1, 1, 1],
-                 [1, 0, 0]],
-
-                [[1, 1, 1],
-                 [1, 1, 1],
-                 [0, 0, 0]],
-
-                [[1, 1, 1],
-                 [1, 1, 0],
-                 [0, 0, 0]],
-
-                [[1, 1, 1],
-                 [1, 0, 0],
-                 [0, 0, 0]],
-
-                [[1, 1, 1],
-                 [0, 0, 0],
-                 [0, 0, 0]],
-
-                [[1, 1, 0],
-                 [0, 0, 0],
-                 [0, 0, 0]],
+                [[1, 1, 1], [1, 1, 1], [1, 1, 1]],
+                [[1, 1, 1], [1, 1, 1], [1, 1, 0]],
+                [[1, 1, 1], [1, 1, 1], [1, 0, 0]],
+                [[1, 1, 1], [1, 1, 1], [0, 0, 0]],
+                [[1, 1, 1], [1, 1, 0], [0, 0, 0]],
+                [[1, 1, 1], [1, 0, 0], [0, 0, 0]],
+                [[1, 1, 1], [0, 0, 0], [0, 0, 0]],
+                [[1, 1, 0], [0, 0, 0], [0, 0, 0]],
             ],
         )
 
-        expected_planes = np.concatenate((expected_black_history, np.zeros((8, 3, 3))))
+        expected_planes = np.concatenate(
+            (expected_black_history, np.zeros((8, 3, 3)))
+        )
         actual_planes = F.leela_board(state, Order.CHW)
 
         npt.assert_equal(expected_planes, actual_planes)

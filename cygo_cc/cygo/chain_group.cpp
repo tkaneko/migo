@@ -1,33 +1,30 @@
+#include "chain_group.hpp"
+
 #include <cassert>
 #include <numeric>
 #include <set>
 #include <sstream>
-
-#include "chain_group.hpp"
-
+#include <vector>
 
 namespace cygo {
 
-ChainGroup::ChainGroup(int board_size) :
-        board_size_(board_size),
-        stones_(board_size * board_size, Color::EMPTY),
-        black_stones_(board_size * board_size, 0),
-        white_stones_(board_size * board_size, 0),
-        chain_ids_(board_size * board_size),
-        neighbor_counters_(board_size * board_size),
-        chains_(board_size * board_size)
+ChainGroup::ChainGroup(int board_size)
+    : board_size_(board_size),
+      stones_(board_size * board_size, Color::EMPTY),
+      black_stones_(board_size * board_size, 0),
+      white_stones_(board_size * board_size, 0),
+      chain_tree_(board_size * board_size),
+      chain_list_(board_size * board_size),
+      neighbor_counters_(board_size * board_size),
+      chains_(board_size * board_size)
 {
-    for_each_coordinate(board_size_, [&] (Move const& v) {
-        empties_.emplace(v);
-        chain_ids_[v()] = v();
+    for_each_coordinate(board_size_, [&](Move const& v) {
 
         if (v.is_at_corner()) {
             neighbor_counters_[v()] = NeighborCounter::empty_at_corner();
-        }
-        else if (v.is_on_edge()) {
+        } else if (v.is_on_edge()) {
             neighbor_counters_[v()] = NeighborCounter::empty_on_edge();
-        }
-        else {
+        } else {
             neighbor_counters_[v()] = NeighborCounter::empty();
         }
     });
@@ -36,10 +33,10 @@ ChainGroup::ChainGroup(int board_size) :
 void ChainGroup::place_stone(Color c, Move const& v) {
     hash_.update(c, v);
 
-    set_stone(c, v);
+    set_stone_(c, v);
 
-    auto id = chain_ids_[v()];
-    chains_[id].emplace(v);
+    auto id = chain_id(v);
+    chains_[id].emplace(v, id); // chain's head and tail are initialized here
 
     for_each_4nbr(v, [&] (Move const& nbr) {
         neighbor_counters_[nbr()].increment(c);
@@ -50,7 +47,7 @@ void ChainGroup::place_stone(Color c, Move const& v) {
         Color nbr_color = stone_at(nbr);
 
         if (nbr_color == Color::EMPTY) {
-            return;
+            return;             // i.e., continue
         }
         else if (nbr_color == c) {
             chain_at_(nbr).add_adjacent_ally(v);
@@ -67,22 +64,21 @@ void ChainGroup::place_stone(Color c, Move const& v) {
         Color nbr_color = stone_at(nbr);
 
         if (nbr_color == Color::EMPTY) {
-            return;
+            return;             // i.e., continue
         }
 
         if (nbr_color == c) {
-            merge_chains(v, nbr);
+            merge_chains_(v, nbr);
         }
         else if (chain_at(nbr).is_captured()){
-            remove_chain(nbr);
+            remove_chain_(nbr);
         }
     });
 }
 
-Chain const& ChainGroup::chain_at(Move const& v) const {
-    return *chains_.at(chain_ids_.at(v()));
+Chain const& ChainGroup::chain_at(Move const& v) const {    
+    return *chains_.at(chain_id(v));
 }
-
 
 Color ChainGroup::stone_at(Move const& v) const {
     // NAND( black, white ) should be true
@@ -124,15 +120,11 @@ bool ChainGroup::is_eye_like(Color c, Move const& v) const {
 }
 
 bool ChainGroup::has_chain_at(Move const& v) const {
-    return chains_.at(chain_ids_.at(v())).has_value();
+    return chain_id_or_empty(v).has_value();
 }
 
 ZobristHash::ValueType ChainGroup::hash() const {
     return hash_.hash_value();
-}
-
-std::unordered_set<Move> const& ChainGroup::empties() const {
-    return empties_;
 }
 
 std::vector<uint8_t> const& ChainGroup::black_board() const {
@@ -148,46 +140,44 @@ std::vector<Color> const& ChainGroup::stones() const {
 }
 
 Chain& ChainGroup::chain_at_(Move const& v) {
-    assert(chains_.at(chain_ids_[v()]));
-
-    return *chains_[chain_ids_[v()]];
+    auto& chain_opt = chains_[chain_id(v)];
+    assert(chain_opt.has_value());
+    return *chain_opt;
 }
 
-void ChainGroup::merge_chains(Move const& v1, Move const& v2) {
-    if (chain_ids_[v1()] == chain_ids_[v2()]) {
-        return;
-    }
+void ChainGroup::merge_chains_(Move const& v1, Move const& v2) {
+    int id1 = chain_id(v1), id2 = chain_id(v2);
+    if (! chain_tree_.unite(id1, id2)) return;
 
-    Move v_base, v_new;
+    int id_base = id1, id_new = id2;
+    if (chain_tree_.root(id1) != id1)
+        std::swap(id_base, id_new);
 
-    if (chain_at(v1).size() > chain_at(v2).size()) {
-        v_base = v1; v_new = v2;
-    }
-    else {
-        v_base = v2; v_new = v1;
-    }
+    Chain& base_chain = *chains_.at(id_base);
+    Chain& new_chain = *chains_.at(id_new);
 
-    Chain& base_chain = chain_at_(v_base);
-    Chain& new_chain = chain_at_(v_new);
-
-    auto new_members = new_chain.members().begin();
-
-    base_chain.merge(new_chain); // splice
-
-    for (auto p=new_members; p!=base_chain.members().end(); ++p) {
-        auto v = *p;
-        chains_[chain_ids_[v()]].reset();
-
-        chain_ids_[v()] = chain_ids_[v_base()];
-    }
+    base_chain.merge(new_chain);  // splice
+    chain_list_.set_next(base_chain.tail, new_chain.head);
+    base_chain.tail = new_chain.tail;
+    assert(chain_tree_.root(id_new) == id_base);
+    chains_[id_new].reset();
 }
 
-void ChainGroup::remove_chain(Move const &vertex) {
-    Chain& chain = chain_at_(vertex);
+std::vector<Move> ChainGroup::chain_members(int id) const {
+    auto p = chains_.at(id)->head;
+    std::vector<Move> ret;
+    ret.reserve(chain_size(id));
+    ret.emplace_back(Move::from_raw(p, board_size_));
+    while (auto next = chain_list_.next(p)) {
+        p = *next;
+        ret.emplace_back(Move::from_raw(p, board_size_));
+    }
+    return ret;
+}
 
-    auto stones(chain.members());
-
-    auto id = chain_ids_[vertex()];
+void ChainGroup::remove_chain_(Move const& vertex) {
+    auto id = chain_id(vertex);
+    auto stones(chain_members(id));
 
     for (auto const& v : stones) {
         for_each_4nbr(v, [&] (Move const& nbr) {
@@ -195,26 +185,24 @@ void ChainGroup::remove_chain(Move const &vertex) {
                 return;
             }
 
-            if (&chain_at_(nbr) == &chain) {
+            auto nbr_id = chain_id(nbr);
+            if (nbr_id == id || !chains_[nbr_id]) { // myself stil alive or myself already removed
                 return;
             }
 
             chain_at_(nbr).add_adjacent_empty(v);
         });
-
-        chain_ids_[v()] = v();
-
-        remove_stone(v);
+        remove_stone_(v);
+        chain_tree_._reset_one(v());
+        chain_list_.reset(v());
     }
-
     chains_[id].reset();
-
 }
 
-void ChainGroup::remove_stone(Move const& v) {
+void ChainGroup::remove_stone_(Move const& v) {
     Color c = stone_at(v);
 
-    set_stone(Color::EMPTY, v);
+    set_stone_(Color::EMPTY, v);
 
     for_each_4nbr(v, [&] (Move const& nbr) {
         neighbor_counters_[nbr()].decrement(c);
@@ -223,36 +211,31 @@ void ChainGroup::remove_stone(Move const& v) {
     hash_.update(c, v);
 }
 
-void ChainGroup::set_stone(Color c, Move const& v) {
-    if (c == Color::BLACK) {
-        stones_[v()] = Color::BLACK;
-        black_stones_[v()] = 1;
-        empties_.erase(v);
-        return;
-    }
-    if (c == Color::WHITE) {
-        stones_[v()] = Color::WHITE;
-        white_stones_[v()] = 1;
-        empties_.erase(v);
+void ChainGroup::set_stone_(Color c, Move const& v) {
+    stones_[v()] = c;
+    if (c != Color::EMPTY) {
+        if (c == Color::BLACK) black_stones_[v()] = 1;
+        else white_stones_[v()] = 1;
+        chain_tree_.enable(v());
         return;
     }
 
-    stones_[v()] = Color::EMPTY;
     black_stones_[v()] = white_stones_[v()] = 0;
-    empties_.emplace(v);
 }
+
 
 std::string ChainGroup::to_string() const {
     std::stringstream ss;
 
-    for (auto const& maybe_chain : chains_) {
+    for (size_t i=0; i<chains_.size(); ++i) {
+        const auto& maybe_chain = chains_[i];
         if (! maybe_chain)
             continue;
         auto const& chain = *maybe_chain;
 
         ss << chain << std::endl;
-        for (auto const& v : chain.members()) {
-            ss << v() << ": " << chain_ids_[v()] << ", ";
+        for (auto const& v : chain_members(i)) {
+            ss << Move::from_raw(v(), board_size_) << '(' << v() << ')' << ": " << chain_id(v) << ", ";
         }
 
         ss << std::endl;
@@ -267,10 +250,17 @@ bool ChainGroup::check_internal_consistency() const {
         stones_.size() == bs * bs
         && black_stones_.size() == bs * bs
         && white_stones_.size() == bs * bs
-        && chain_ids_.size() == bs * bs
         && neighbor_counters_.size() == bs * bs
         && chains_.size() == bs * bs;
     if (not size_ok)
+        return false;
+    bool chain_ok = true;
+    for_each_coordinate(board_size_, [&](Move const& v) {
+        if (stone_at(v) == Color::EMPTY) return;
+        auto& chain = chain_at(v);
+        if (chain.liberty_count() == 0) chain_ok = false;
+    });
+    if (!chain_ok)
         return false;
 
     return true;

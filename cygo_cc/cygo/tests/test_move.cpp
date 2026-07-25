@@ -47,7 +47,7 @@ TEST(vertex_test, for_each_4nbr) {
 
     std::size_t expected_nbrs = 2, actual_nbrs = 0;
 
-    for_each_4nbr(v, [&] (Move const& nbr) {
+    for_each_4nbr(v, [&] (Move const& /*nbr*/) {
         actual_nbrs += 1;
     });
 

@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.22)
 
 project(cygo CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_CXX_FLAGS_RELEASE        "${CMAKE_CXX_FLAGS_RELEASE}        -Wall -Wextra -march=native -Wno-deprecated -DNDEBUG")
@@ -22,6 +23,19 @@ include(cmake/third-party.cmake)
 get_third_party(pybind11)
 include_directories(${CMAKE_BINARY_DIR}/pybind11/include)
 add_subdirectory(${CMAKE_BINARY_DIR}/pybind11 ${CMAKE_CURRENT_BINARY_DIR}/pybind11-build)
+
+
+# utils
+option(CYGO_BUILD_UTILS "build utilities" OFF)
+if(${CYGO_BUILD_UTILS})
+  include(cmake/argparse.cmake)
+  include(cmake/indicators.cmake)
+  option(CYGO_EXECUTORCH "experimental executorch runner" OFF)
+  if(${CYGO_EXECUTORCH})
+    include(cmake/executorch.cmake)
+    add_subdirectory(${CMAKE_BINARY_DIR}/executorch)
+  endif()
+endif()
 
 # google test
 option(CYGO_ENABLE_TESTING OFF)

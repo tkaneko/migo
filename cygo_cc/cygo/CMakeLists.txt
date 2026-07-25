@@ -1,6 +1,7 @@
 set(cygo_srcs
     chain.cpp
     chain_group.cpp
+    features.cpp
     move.cpp
     neighbor_counter.cpp
     state.cpp
@@ -14,3 +15,4 @@ set_target_properties(cygo-core PROPERTIES POSITION_INDEPENDENT_CODE TRUE)
 
 add_subdirectory(binding)
 add_subdirectory(tests)
+add_subdirectory(utils)

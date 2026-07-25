@@ -1,8 +1,8 @@
 import enum
 from collections import OrderedDict, namedtuple
-from typing import Callable, Tuple, Sequence
+from typing import Callable, Sequence, Tuple
 
-from migo.gtp import Status, GTPRunner
+from migo.gtp import GTPRunner, Status
 
 
 class CommandType(str, enum.Enum):
@@ -26,13 +26,15 @@ GoGuiParam = namedtuple('GoGuiParam', 'name type gogui_type value')
 
 
 class GoGuiParams:
-
     def __init__(self, params: Sequence[GoGuiParam]):
         self.params = OrderedDict()
 
         for param in params:
-            self.params[param.name] = (param.type, param.gogui_type,
-                                       param.value)
+            self.params[param.name] = (
+                param.type,
+                param.gogui_type,
+                param.value,
+            )
 
     @property
     def param_names(self):
@@ -68,49 +70,62 @@ class GoGuiParams:
 
         self.update(param_name, param_value)
 
-        return Status.success, ""
+        return Status.success, ''
 
     def __str__(self):
-        return '\n'.join([
-            "[{type}] {param} {value}".format(
-                type=gogui_type, param=param_name, value=value)
-            for (param_name, (param_type, gogui_type, value))
-            in self.params.items()])
+        return '\n'.join(
+            [
+                '[{type}] {param} {value}'.format(
+                    type=gogui_type, param=param_name, value=value
+                )
+                for (
+                    param_name,
+                    (_param_type, gogui_type, value),
+                ) in self.params.items()
+            ]
+        )
 
 
 class GoGuiGTPRunner(GTPRunner):
-
     def __init__(self):
         super().__init__()
 
         self._analyze_callbacks = []
 
-        self.add_callback('gogui_analyze_commands',
-                          self.cmd_gogui_analyze_commands, arity=0)
+        self.add_callback(
+            'gogui_analyze_commands', self.cmd_gogui_analyze_commands, arity=0
+        )
 
-    def add_analyze_callback(self,
-                             command_type: CommandType,
-                             command_str: str,
-                             callback: Callable[..., Tuple[Status, str]],
-                             check_arity=True,
-                             display_name: str | None = None,
-                             description: str | None = None) -> None:
+    def add_analyze_callback(
+        self,
+        command_type: CommandType,
+        command_str: str,
+        callback: Callable[..., Tuple[Status, str]],
+        check_arity=True,
+        display_name: str | None = None,
+        description: str | None = None,
+    ) -> None:
 
         command_tokens = command_str.split()
 
         self._assert_command_tokens(command_tokens)
         self._analyze_callbacks.append(
-            "%s/%s/%s" % (command_type.value, display_name or command_str,
-                          command_str))
+            '%s/%s/%s'
+            % (command_type.value, display_name or command_str, command_str)
+        )
 
         arity = len(command_tokens) - 1 if check_arity else None
 
         if command_tokens[0] not in self.list_commands:
-            self.add_callback(command_tokens[0], callback, arity=arity,
-                              description=description)
+            self.add_callback(
+                command_tokens[0],
+                callback,
+                arity=arity,
+                description=description,
+            )
 
     def cmd_gogui_analyze_commands(self, *_) -> Tuple[Status, str]:
-        return Status.success, "\n".join(self._analyze_callbacks)
+        return Status.success, '\n'.join(self._analyze_callbacks)
 
     @staticmethod
     def _assert_command_tokens(command_tokens) -> None:

@@ -1,21 +1,31 @@
-import cygo
-from .sgfutils import parse_one_game, SgfPrinter
-import recordclass
-import numpy as np
 import io
+import logging
 
+import numpy as np
+import recordclass
+
+from . import cygo
+
+from .sgfutils import SgfContentError, SgfPrinter, parse_one_game
 
 SimpleRecord = recordclass.recordclass(
-    'SimpleRecord', (
-        'board_size', 'komi',
+    'SimpleRecord',
+    (
+        # config
+        'board_size',  # int
+        'komi',  # float
         # results
-        'moves', 'winner', 'score',
-        'territory', 'zone_score',
-    ))                         #: data record for a ordinary single game
+        'moves',  # np.ndarray[dtype=np.int16]
+        'winner',  # Color
+        'score',  # float
+        'territory',  # np.ndarray
+        'zone_score',  # float
+    ),
+)  #: data record for a ordinary single game
 
 
 def parse_sgf_game(sgf_string: str) -> SimpleRecord:
-    '''read sgf_string containing a single game
+    """read sgf_string containing a single game
 
     :return: :py:class:`SimpleRecord`
 
@@ -31,7 +41,7 @@ def parse_sgf_game(sgf_string: str) -> SimpleRecord:
     >>> state = cygo.State(record.board_size)
     >>> cygo.apply_moves(state, record.moves)
     >>> print(state)
-      A  B  C  D  E  F  G  H  J 
+      A  B  C  D  E  F  G  H  J
     9 .  .  .  .  .  .  .  .  . 9
     8 .  .  .  .  .  .  .  .  . 8
     7 .  .  .  .  .  .  .  .  . 7
@@ -41,9 +51,9 @@ def parse_sgf_game(sgf_string: str) -> SimpleRecord:
     3 .  .  .  .  .  .  .  .  . 3
     2 .  .  .  .  .  .  .  .  . 2
     1 .  .  .  .  .  .  .  .  . 1
-      A  B  C  D  E  F  G  H  J 
+      A  B  C  D  E  F  G  H  J
     ...
-    '''
+    """
     state, moves, winner, score = parse_one_game(sgf_string, 0, cygo)
     board_size = state.board_size
     if state.current_player != cygo.Color.BLACK:
@@ -58,7 +68,7 @@ def parse_sgf_game(sgf_string: str) -> SimpleRecord:
             raise RuntimeError('not implemented')
         move = move.move
         if not move:
-            raw_moves[i] = -1   # pass
+            raw_moves[i] = -1  # pass
             continue
         cmove = cygo.Move.from_coordinate(*move, board_size=board_size)
         raw_moves[i] = cmove.raw()
@@ -68,30 +78,31 @@ def parse_sgf_game(sgf_string: str) -> SimpleRecord:
         komi=state.komi,
         moves=raw_moves,
         winner=winner,
-        score=score
+        score=score,
     )
 
 
 def load_sgf_game(sgf_path) -> SimpleRecord:
-    '''open sgf file and return :py:class:`SimpleRecord`.
-    '''
+    """open sgf file and return :py:class:`SimpleRecord`."""
     with open(sgf_path) as file:
         content = file.read()
     return parse_sgf_game(content)
 
 
 def load_sgf_games_in_folder(folder_path) -> list[SimpleRecord]:
-    '''open sgf files in given folder to make list of :py:class:`SimpleRecord`
-    '''
-    import os.path
+    """open sgf files in given folder to make list of :py:class:`SimpleRecord`"""
     import glob
+    import os.path
 
     if not os.path.isdir(folder_path):
         raise RuntimeError(f'not folder {folder_path}')
     file_pattern = f'{folder_path}/*.sgf'
     games = []
     for sgf_path in glob.glob(file_pattern):
-        games.append(load_sgf_game(sgf_path))
+        try:
+            games.append(load_sgf_game(sgf_path))
+        except SgfContentError as e:
+            logging.warning(f'ignore {sgf_path} {e}')
     return games
 
 
@@ -105,7 +116,7 @@ def move_to_sgf(move):
 
 
 def record_to_sgf(record: SimpleRecord) -> str:
-    '''return sgf representation of given record'''
+    """return sgf representation of given record"""
     out = io.StringIO()
     props = {'KM': f'{record.komi}'}
     if record.score is not None:
@@ -115,10 +126,7 @@ def record_to_sgf(record: SimpleRecord) -> str:
             props['RE'] = f'B+{record.score}'
         else:
             props['RE'] = f'W+{-record.score}'
-    prt = SgfPrinter(
-        out, size=record.board_size,
-        initial_props=props
-    )
+    prt = SgfPrinter(out, size=record.board_size, initial_props=props)
     prt.open()
     color = 'BW'
     for i, move in enumerate(record.moves):

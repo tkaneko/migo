@@ -1,6 +1,7 @@
 import numpy as np
+
+import migo.cygo as cygo
 import migo.features
-import cygo
 
 
 def check_consistency(pstate, cstate, n=3):
@@ -91,7 +92,7 @@ def test_consistent_pass2():
     x = migo.features.history_n(s, 4)  # history: (1, 1), (1, 2)
     s.make_move(None)
     s.make_move(None)
-    y = migo.features.history_n(s, 4)   # history: (1, 1), (1, 2), pass, pass
+    y = migo.features.history_n(s, 4)  # history: (1, 1), (1, 2), pass, pass
     z = migo.features.migo.history_n(s, 4)
     assert not np.array_equal(x, y)
     assert not np.array_equal(x, z)
@@ -103,7 +104,7 @@ def test_consistent_pass2():
     cx = migo.features.history_n(cs, 4)  # history: (1, 1), (1, 2)
     cs.make_move(None)
     cs.make_move(None)
-    cy = migo.features.history_n(cs, 4)   # history: (1, 1), (1, 2), pass, pass
+    cy = migo.features.history_n(cs, 4)  # history: (1, 1), (1, 2), pass, pass
 
     assert np.array_equal(x, cx)
     assert np.array_equal(y, cy)

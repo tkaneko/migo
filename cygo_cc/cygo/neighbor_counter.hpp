@@ -2,9 +2,11 @@
 #define CYGO_NEIGHBOR_COUNTER_HPP
 
 #include "color.hpp"
-
+#include <cstdint>
 
 namespace cygo {
+
+typedef uint16_t neighbor_bits_t;
 
 class NeighborCounter {
 public:
@@ -23,11 +25,11 @@ public:
     static NeighborCounter empty_at_corner();
 
 private:
-    unsigned int bits_;
+    neighbor_bits_t bits_;
 
-    explicit NeighborCounter(unsigned int b);
+    explicit NeighborCounter(neighbor_bits_t b);
 
-    static NeighborCounter create(unsigned int black, unsigned int white, unsigned int empty);
+    static NeighborCounter create(neighbor_bits_t black, neighbor_bits_t white, neighbor_bits_t empty);
 };
 
 }

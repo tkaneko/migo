@@ -1,14 +1,21 @@
 from collections import defaultdict
 from copy import deepcopy
 from io import StringIO
-from typing import Set, List, Dict, Union
+from typing import Dict, List, Set, Union
 
 import numpy as np
 
 from migo.gtp import parse_move
 from migo.hash import NeighborTable, ZobristHash
-from migo.misc import all_coordinates, Color, Coord, Move, IllegalMoveError, \
-    Pass, index_to_coord
+from migo.misc import (
+    Color,
+    Coord,
+    IllegalMoveError,
+    Move,
+    Pass,
+    all_coordinates,
+    index_to_coord,
+)
 
 
 class State:
@@ -16,7 +23,7 @@ class State:
 
     >>> state = migo.State(4)
     >>> print(state)
-        A  B  C  D 
+        A  B  C  D
        ------------
      4| .  .  .  . |
      3| .  .  .  . |
@@ -29,7 +36,7 @@ class State:
     >>> state.make_move('c3')
     False
     >>> print(state)
-        A  B  C  D 
+        A  B  C  D
        ------------
      4| .  .  .  . |
      3| .  B  W  . |
@@ -44,12 +51,18 @@ class State:
     >>> state.liberty_count_of((2, 2))
     2
     """
-    def __init__(self, board_size: int = 19, komi: float = 7.5,
-                 superko_rule=True, max_history_n=7):
+
+    def __init__(
+        self,
+        board_size: int = 19,
+        komi: float = 7.5,
+        superko_rule=True,
+        max_history_n=7,
+    ):
         self.neighbor_table = NeighborTable(size=board_size)
 
-        self.__legal_moves_cache = None  # type: Set[Coord]
-        self.__legal_eyes_cache = None  # type: Set[Coord]
+        self.__legal_moves_cache = None  # type: Set[Coord] | None
+        self.__legal_eyes_cache = None  # type: Set[Coord] | None
 
         # 1 true, -1 false eye, 0 unknown
         self.__eyes_cache = np.zeros((board_size, board_size), dtype=int)
@@ -58,7 +71,7 @@ class State:
         self.komi = komi
         self.superko_rule = superko_rule
 
-        self.ko: Coord = None
+        self.ko: Coord | None = None
         self.is_game_over = False
         self.current_player: Color = Color.BLACK
         self.passes: Dict[Color, int] = defaultdict(int)
@@ -88,10 +101,12 @@ class State:
         self.history_buffer = []  # type: List[np.ndarray]
 
     def copy(self):
-        other = State(board_size=self.board_size,
-                      komi=self.komi,
-                      superko_rule=self.superko_rule,
-                      max_history_n=self.max_history_n)
+        other = State(
+            board_size=self.board_size,
+            komi=self.komi,
+            superko_rule=self.superko_rule,
+            max_history_n=self.max_history_n,
+        )
 
         other.ko = self.ko
         other.is_game_over = self.is_game_over
@@ -116,16 +131,18 @@ class State:
         return other
 
     def legal_moves(self, include_eyes=True) -> Set[Coord]:
-        if not self.__legal_moves_cache:
+        if self.__legal_moves_cache is None:
             self.__create_legal_move_cache()
-
+        assert self.__legal_moves_cache is not None
         if include_eyes:
+            assert self.__legal_eyes_cache is not None
             return self.__legal_moves_cache | self.__legal_eyes_cache
 
-        return set(self.__legal_moves_cache)
+        return self.__legal_moves_cache
 
-    def make_move(self, action: Union[Move, int, str], color: Color = None
-                  ) -> bool:
+    def make_move(
+        self, action: Union[Move, int, str], color: Color | None = None
+    ) -> bool:
         """place a stone of color at action
 
         :return: bool indicating game over
@@ -137,8 +154,9 @@ class State:
         elif isinstance(action, str):
             action = parse_move(action)
         else:
-            raise IllegalMoveError("Expected tuple, int, or str but got `%s`"
-                                   % type(action))
+            raise IllegalMoveError(
+                'Expected tuple, int, or str but got `%s`' % type(action)
+            )
 
         if self.max_history_n <= 0:
             return self.__make_move_impl(action, color)
@@ -241,12 +259,14 @@ class State:
         if self.board[position] != Color.EMPTY:
             return False
 
-        return all(self.board[neighbor] == owner
-                   for neighbor in self.crosswise_neighbors_of(position))
+        return all(
+            self.board[neighbor] == owner
+            for neighbor in self.crosswise_neighbors_of(position)
+        )
 
-    def is_eye(self, position: Coord, owner: Color,
-               stack: list[Coord] | None = None
-               ) -> bool:
+    def is_eye(
+        self, position: Coord, owner: Color, stack: list[Coord] | None = None
+    ) -> bool:
         """identify whether position is eye for owner"""
         if not self.is_eyeish(position, owner):
             return False
@@ -260,8 +280,9 @@ class State:
             return True if cache > 0 else False
 
         other = owner.opponent()
-        num_allowable_bad_coordinates = 1 \
-            if len(self.crosswise_neighbors_of(position)) == 4 else 0
+        num_allowable_bad_coordinates = (
+            1 if len(self.crosswise_neighbors_of(position)) == 4 else 0
+        )
 
         num_bad_coordinates = 0
         for diagonal in self.diagonal_neighbors_of(position):
@@ -281,8 +302,7 @@ class State:
         self.__eyes_cache[position[0], position[1]] = 1
         return True
 
-    def is_suicide_move(self, action: Move, color: Color | None = None
-                        ) -> bool:
+    def is_suicide_move(self, action: Move, color: Color | None = None) -> bool:
         """whether action is prohibited due to lack of liberties"""
         if action is Pass:
             return False
@@ -297,21 +317,24 @@ class State:
             return False
 
         for neighbor in self.crosswise_neighbors_of(position):
-            group_has_other_liberties = \
+            group_has_other_liberties = (
                 len(self.liberty_sets[neighbor] - {action}) > 0
+            )
 
             # if the move is saving another group
             if self.board[neighbor] == color and group_has_other_liberties:
                 return False
 
             # if the move is killing an opponent group
-            if self.board[neighbor] == opponent_color\
-               and not group_has_other_liberties:
+            if (
+                self.board[neighbor] == opponent_color
+                and not group_has_other_liberties
+            ):
                 return False
 
         return True
 
-    def is_legal(self, action: Move, color: Color = None) -> bool:
+    def is_legal(self, action: Move, color: Color | None = None) -> bool:
         """identify action is legal"""
         if action is Pass:
             return True
@@ -332,8 +355,9 @@ class State:
 
         return True
 
-    def is_positional_superko(self, position: Coord, color: Color = None
-                              ) -> bool:
+    def is_positional_superko(
+        self, position: Coord, color: Color | None = None
+    ) -> bool:
         """identify action is not allowed due to superko_rule"""
         color = color or self.current_player
 
@@ -342,8 +366,10 @@ class State:
         elif color == Color.WHITE:
             player_history = self.move_history[1::2]
         else:
-            raise ValueError("color should be either Color.BLACK"
-                             " or Color.WHITE. got %s" % color)
+            raise ValueError(
+                'color should be either Color.BLACK'
+                ' or Color.WHITE. got %s' % color
+            )
 
         if position not in player_history:
             return False
@@ -355,8 +381,9 @@ class State:
 
         return copied.zobrist_hash in self.hash_history
 
-    def is_ladder_capture(self, position: Coord, prey: Coord = None,
-                          remaining_attempts=80):
+    def is_ladder_capture(
+        self, position: Coord, prey: Coord | None = None, remaining_attempts=80
+    ):
         """identify position is for ladder capture for prey"""
         if remaining_attempts <= 0:
             return False
@@ -372,9 +399,12 @@ class State:
                 next(iter(group)) for group in self.groups_around_at(position)
             ]
             potential_prey = [
-                neighbor for neighbor in neighbor_groups_stones
-                if (self.board[neighbor] == prey_color
-                    and self.liberty_counts[neighbor] == 2)
+                neighbor
+                for neighbor in neighbor_groups_stones
+                if (
+                    self.board[neighbor] == prey_color
+                    and self.liberty_counts[neighbor] == 2
+                )
             ]
             if not potential_prey:
                 return False
@@ -389,8 +419,10 @@ class State:
 
             for prey_stone in copied.groups[prey_coord]:
                 for neighbor in copied.crosswise_neighbors_of(prey_stone):
-                    if copied.board[neighbor] == hunter_color\
-                       and copied.liberty_counts[neighbor] == 1:
+                    if (
+                        copied.board[neighbor] == hunter_color
+                        and copied.liberty_counts[neighbor] == 1
+                    ):
                         # for each neighbor stone of the prey groups, check that the stone is a hunter stone and
                         # the hunter group is atari, then the group can be captured and
                         # possibly the prey can escape by capturing the group
@@ -398,17 +430,21 @@ class State:
 
             prey_can_escape = any(
                 copied.is_ladder_escape(
-                    escape_coord, prey=prey_coord,
-                    remaining_attempts=(remaining_attempts - 1))
-                for escape_coord in possible_escapes)
+                    escape_coord,
+                    prey=prey_coord,
+                    remaining_attempts=(remaining_attempts - 1),
+                )
+                for escape_coord in possible_escapes
+            )
 
             if not prey_can_escape:
                 return True
 
         return False
 
-    def is_ladder_escape(self, position: Coord, prey: Coord = None,
-                         remaining_attempts=80):
+    def is_ladder_escape(
+        self, position: Coord, prey: Coord | None = None, remaining_attempts=80
+    ):
         """identify position is a candidate for ladder escape"""
         if remaining_attempts <= 0:
             return False
@@ -423,9 +459,12 @@ class State:
                 next(iter(group)) for group in self.groups_around_at(position)
             ]
             potential_prey = [
-                neighbor for neighbor in neighbor_groups_stones
-                if (self.board[neighbor] == prey_color
-                    and self.liberty_counts[neighbor] == 1)
+                neighbor
+                for neighbor in neighbor_groups_stones
+                if (
+                    self.board[neighbor] == prey_color
+                    and self.liberty_counts[neighbor] == 1
+                )
             ]
 
             if not potential_prey:
@@ -448,9 +487,12 @@ class State:
 
             hunter_can_capture = any(
                 copied.is_ladder_capture(
-                    possible_capture, prey=prey_coord,
-                    remaining_attempts=(remaining_attempts - 1))
-                for possible_capture in possible_captures)
+                    possible_capture,
+                    prey=prey_coord,
+                    remaining_attempts=(remaining_attempts - 1),
+                )
+                for possible_capture in possible_captures
+            )
 
             if hunter_can_capture:
                 continue
@@ -461,12 +503,14 @@ class State:
 
     def __create_legal_move_cache(self):
         legal_moves = {
-            move for move in all_coordinates(self.board_size)
+            move
+            for move in all_coordinates(self.board_size)
             if self.is_legal(move)
         }
 
         self.__legal_moves_cache = {
-            move for move in legal_moves
+            move
+            for move in legal_moves
             if not self.is_eye(move, self.current_player)
         }
         self.__legal_eyes_cache = legal_moves - self.__legal_moves_cache
@@ -476,7 +520,9 @@ class State:
         self.__legal_eyes_cache = None
         self.__eyes_cache[:] = 0
 
-    def __place_stone(self, position: Coord, color: Color):
+    def _place_stone(
+        self, position: Coord, color: Color
+    ):  # note: called inside `parse`
         self.board[position] = color
         self.board_hash.update(position, color)
 
@@ -532,13 +578,17 @@ class State:
                     self.liberty_sets[neighbor].add(position)
 
                     for group in self.groups[neighbor]:
-                        self.liberty_counts[group] = len(self.liberty_sets[neighbor])
+                        self.liberty_counts[group] = len(
+                            self.liberty_sets[neighbor]
+                        )
 
-    def __make_move_impl(self, action: Move, color: Color = None) -> bool:
+    def __make_move_impl(
+        self, action: Move, color: Color | None = None
+    ) -> bool:
         color = color or self.current_player
 
         if not self.is_legal(action, color):
-            raise IllegalMoveError("Cannot play %s by %s" % (action, color))
+            raise IllegalMoveError('Cannot play %s by %s' % (action, color))
 
         self.move_history.append(action)
         self.ko = None
@@ -561,12 +611,14 @@ class State:
         position = action  # type: Coord
         other = color.opponent()
 
-        self.__place_stone(position, color)
+        self._place_stone(position, color)
 
         # check neighbors' liberty and remove if the move kills neighbors
         for neighbor in self.crosswise_neighbors_of(position):
-            if self.board[neighbor] != other\
-               or len(self.liberty_sets[neighbor]) != 0:
+            if (
+                self.board[neighbor] != other
+                or len(self.liberty_sets[neighbor]) != 0
+            ):
                 # no capturing
                 continue
 
@@ -597,18 +649,20 @@ class State:
         row_characters = 'ABCDEFGHJKLMNOPQRSTUVWXYZ'
 
         header = '   ' + ''.join(
-            [" " + row_characters[i] + " " for i in range(self.board_size)]
-        ) + "\n"
+            [' ' + row_characters[i] + ' ' for i in range(self.board_size)]
+        )
+        header = header.rstrip()
+        buffer.write(header + '\n')
 
-        buffer.write(header)
+        buffer.write('   ')
+        for _x in range(self.board_size):
+            buffer.write('---')
+        buffer.write('\n')
 
-        buffer.write("   ")
-        for x in range(self.board_size):
-            buffer.write("---")
-        buffer.write("\n")
-
-        for y in range(self.board_size - 1, -1, -1):  # reverse(list(range(self.size))
-            buffer.write("%2d|" % (y + 1))
+        for y in range(
+            self.board_size - 1, -1, -1
+        ):  # reverse(list(range(self.size))
+            buffer.write('%2d|' % (y + 1))
             for x in range(self.board_size):
                 color = self.color_at((y, x))
 
@@ -619,13 +673,13 @@ class State:
                 else:
                     character = '.'
 
-                buffer.write(" %s " % character)
-            buffer.write("|\n")
+                buffer.write(' %s ' % character)
+            buffer.write('|\n')
 
-        buffer.write("   ")
-        for x in range(self.board_size):
-            buffer.write("---")
-        buffer.write("\n")
+        buffer.write('   ')
+        for _x in range(self.board_size):
+            buffer.write('---')
+        buffer.write('\n')
 
         return buffer.getvalue()
 
@@ -641,7 +695,7 @@ class State:
 
         >>> state, _ = migo.state.parse('. B . B|. B . B|. W W .|. . . .|')
         >>> print(state)
-            A  B  C  D 
+            A  B  C  D
            ------------
          4| .  .  .  . |
          3| .  W  W  . |
@@ -651,17 +705,18 @@ class State:
         ...
         >>> cstate = state.to_cygo()
         >>> print(cstate)
-          A  B  C  D 
+          A  B  C  D
         4 .  .  .  . 4
         3 .  O (O) . 3
         2 .  X  .  X 2
         1 .  X  .  X 1
-          A  B  C  D 
+          A  B  C  D
         ...
         >>> for v in migo.all_coordinates(state.board_size):
         ...     assert int(state.color_at(v)) == int(cstate.color_at(v))
         """
-        import cygo
+        from . import cygo
+
         cstate = cygo.State(
             self.board_size, self.komi, self.superko_rule, self.max_history_n
         )
@@ -674,8 +729,9 @@ class State:
         return cstate
 
 
-def parse(board_str: str, next_color: Color = None,
-          keep_history: bool = False):
+def parse(
+    board_str: str, next_color: Color | None = None, keep_history: bool = False
+):
     """parse text board representation with optional move markers
 
     :param next_color: turn to move
@@ -690,7 +746,7 @@ def parse(board_str: str, next_color: Color = None,
     ... ])
     >>> state, moves = migo.state.parse(board)
     >>> print(state)
-        A  B  C  D 
+        A  B  C  D
        ------------
      4| .  B  W  . |
      3| .  B  W  W |
@@ -715,7 +771,7 @@ def parse(board_str: str, next_color: Color = None,
     state = State(board_size=size)
 
     moves = {}
-    place = state.make_move if keep_history else state._State__place_stone
+    place = state.make_move if keep_history else state._place_stone
 
     for row, row_str in enumerate(board_str.split('|')):
         for col, c in enumerate(row_str):

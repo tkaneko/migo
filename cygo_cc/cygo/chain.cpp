@@ -13,15 +13,13 @@ Chain::Chain() :
     liberty_sum_sq_(-1)
 { }
 
-Chain::Chain(Move const& v) :
-        members_({v}),
-        liberty_count_(0),
-        liberty_sum_(0),
-        liberty_sum_sq_(0)
-{
-    for_each_4nbr(v, [&] (Move const& nbr) {
-        add_adjacent_empty(nbr);
-    });
+Chain::Chain(Move const& v, int id)
+    : head(id),
+      tail(id),
+      liberty_count_(0),
+      liberty_sum_(0),
+      liberty_sum_sq_(0) {
+    for_each_4nbr(v, [&](Move const& nbr) { add_adjacent_empty(nbr); });
 }
 
 void Chain::add_adjacent_opponent(Move const &v) {
@@ -52,8 +50,6 @@ void Chain::merge(Chain& other) {
     liberty_count_  += other.liberty_count_;
     liberty_sum_    += other.liberty_sum_;
     liberty_sum_sq_ += other.liberty_sum_sq_;
-
-    members_.splice(members_.end(), other.members_);
 }
 
 bool Chain::is_captured() const {
@@ -61,6 +57,13 @@ bool Chain::is_captured() const {
 }
 
 bool Chain::is_in_atari() const {
+    // atari <==>
+    // - liberty_count_ == 1,
+    // - liberty_sum_sq_ == liberty_sum_ * liberty_sum_
+    // or
+    // - liberty_count_ == 2, but the same vertex is the unique liberty
+    // - liberty_sum_sq_ * 2 == 2(v^2+v^2) == 4v^2 == liberty_sum_ * liberty_sum_
+    // or works for liberty_count_ == 3 or 4 for the same vertex is the unique liberty
     return liberty_count_ * liberty_sum_sq_ == liberty_sum_ * liberty_sum_;
 }
 
@@ -68,12 +71,8 @@ int Chain::liberty_count() const {
     return liberty_count_;
 }
 
-int Chain::size() const {
-    return members_.size();
-}
-
-Move Chain::atari_vertex() const {
-    if (members_.empty()) {
+Move Chain::atari_vertex(int board_size) const {
+    if (liberty_count_ < 0) {
         return Move::INVALID;
     }
 
@@ -85,29 +84,7 @@ Move Chain::atari_vertex() const {
         return Move::INVALID;
     }
 
-    return Move::from_raw(liberty_sum_ / liberty_count_, members_.begin()->board_size());
-}
-
-std::list<Move> const& Chain::members() const {
-    return members_;
-}
-
-bool Chain::equals(const Chain& other) {
-    if (liberty_count_ != other.liberty_count_) {
-        return false;
-    }
-
-    if (liberty_sum_ == other.liberty_sum_) {
-        return false;
-    }
-
-    if (liberty_sum_sq_ == other.liberty_sum_sq_) {
-        return false;
-    }
-
-    return std::all_of(std::begin(other.members()), std::end(other.members()), [&] (Move const& v) {
-        return std::find(members_.begin(), members_.end(), v) != members_.end();
-    });
+    return Move::from_raw(liberty_sum_ / liberty_count_, board_size);
 }
 
 int Chain::hash() const {
@@ -118,11 +95,6 @@ std::string Chain::to_string() const {
     std::stringstream ss;
 
     ss << "liberty count: " << liberty_count_ << ", members: ";
-
-    for (auto const& member : members_) {
-        ss << member << " ";
-    }
-
     return ss.str();
 }
 

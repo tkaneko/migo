@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'migo'
-copyright = '2024-2025, games-research-komaba'
+copyright = '2024-2026, games-research-komaba'
 author = 'games-research-komaba'
-release = 'r0-1-4'
+release = 'r0-1-5'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -32,7 +32,7 @@ breathe_domain_by_extension = {
 }
 breathe_show_enumvalue_initializer = True
 
-doctest_global_setup = 'import migo, migo.sgfutils, cygo, migo.features, migo.drawing, migo.record, io'
+doctest_global_setup = 'import migo, migo.sgfutils, migo.cygo as cygo, migo.features, migo.drawing, migo.record, io'
 
 templates_path = ['_templates']
 exclude_patterns = []

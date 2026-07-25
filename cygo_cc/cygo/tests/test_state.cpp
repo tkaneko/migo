@@ -1,10 +1,11 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 #include "cygo/move.hpp"
 #include "cygo/state.hpp"
 
 using namespace cygo;
-
 
 TEST(state_test, real_game_1) {
     State s(9, 7.5, false, 0);

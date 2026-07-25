@@ -8,7 +8,8 @@ from migo.gtp import GTPRuntimeError, GTPRunner, Status
 class TestGTPRunner:
 
     @pytest.fixture(scope='class', autouse=True)
-    def gtp_runner(self):
+    @classmethod
+    def gtp_runner(cls):
         def f_0():
             return Status.success, ""
 

@@ -8,17 +8,19 @@ records without any branch.
 - base package https://github.com/jtauber/sgf
 - specifications https://red-bean.com/sgf/
 """
-import sgf
-import recordclass
-import re
+
 import logging
+import re
 from enum import Enum
 from string import ascii_lowercase, ascii_uppercase
-from typing import Optional, Tuple, Dict, List, Union, Generator
+from typing import Dict, Generator, List, Optional, Tuple, Union
 
+import recordclass
+import sgf
 
-_SGF_SCORE_REGEX = re.compile(r'(((?P<color>[BW])\+(?P<score>(\d+|R)))|DRAW)',
-                              re.IGNORECASE)
+_SGF_SCORE_REGEX = re.compile(
+    r'(((?P<color>[BW])\+(?P<score>(\d+|R)))|DRAW)', re.IGNORECASE
+)
 _SGF_MOVE_REGEX = re.compile(r'^[A-T]{2}$', re.IGNORECASE)
 
 
@@ -53,8 +55,7 @@ def move_to_sgf(move: Optional[Tuple[int, int]]) -> str:
 
 
 def parse_sgf_move(
-        move_str: str,
-        board_size: int = 0
+    move_str: str, board_size: int = 0
 ) -> Optional[Tuple[int, int]]:
     """Returns either None or (x, y) coordinates of board.
 
@@ -68,9 +69,9 @@ def parse_sgf_move(
         return None
 
     if board_size < 1:
-        raise SgfContentError("need board_size if a move is not pass")
+        raise SgfContentError('need board_size if a move is not pass')
 
-    e = SgfContentError("Invalid move string %s" % move_str)
+    e = SgfContentError('Invalid move string %s' % move_str)
 
     if len(move_str) != 2:
         raise e
@@ -94,7 +95,7 @@ def parse_sgf_move(
 
 def parse_sgf_result(score_str: str) -> Tuple[SgfColor, float]:
     if not _SGF_SCORE_REGEX.match(score_str):
-        raise SgfContentError("Cannot parse score string `%s`" % score_str)
+        raise SgfContentError('Cannot parse score string `%s`' % score_str)
 
     if score_str.lower() == 'draw':
         return SgfColor.NIL, 0.0
@@ -107,7 +108,7 @@ def parse_sgf_result(score_str: str) -> Tuple[SgfColor, float]:
         raise SgfContentError
 
     if score_str[2] == 'R':
-        score = 0.
+        score = 0.0
     else:
         score = float(score_str[2:])
 
@@ -144,6 +145,7 @@ class SgfPrinter:
     >>> print(out.getvalue())
     (;FF[4]GM[1]SZ[4];B[a2];W[2c])
     """
+
     def __init__(self, out, size, initial_props: Optional[Dict] = None):
         self.parser = sgf.Parser()
         self.collection = sgf.Collection(self.parser)
@@ -158,7 +160,7 @@ class SgfPrinter:
 
     def open(self):
         """start and open a game tree"""
-        self.parser.start_gametree()
+        self.parser.start_gametree()  # ty: ignore[unresolved-attribute], see sgf.GameTree.setup
         self.__add_initial_props()
 
         return self
@@ -168,21 +170,21 @@ class SgfPrinter:
 
     def close(self):
         """close the game tree previously opened by open()"""
-        self.parser.end_gametree()
+        self.parser.end_gametree()  # ty: ignore[unresolved-attribute]
 
         self.collection.output(self.out)
 
     def add_node(self, dic: Dict[str, Union[str, List[str]]]):
         """add a node in the game tree"""
-        self.parser.start_node()
+        self.parser.start_node()  # ty: ignore[unresolved-attribute]
 
         for key, value in dic.items():
             self.__add_property(key, value)
 
-        self.parser.end_node()
+        self.parser.end_node()  # ty: ignore[unresolved-attribute]
 
     def __add_initial_props(self):
-        self.parser.start_node()
+        self.parser.start_node()  # ty: ignore[unresolved-attribute]
 
         self.__add_property('FF', '4')
         self.__add_property('GM', '1')
@@ -192,23 +194,26 @@ class SgfPrinter:
             self.__add_property(key, value)
 
     def __add_property(self, identifier, value):
-        self.parser.start_property(identifier)
+        self.parser.start_property(identifier)  # ty: ignore[unresolved-attribute]
 
         if isinstance(value, list):
             for v in value:
-                self.parser.add_prop_value(v)
+                self.parser.add_prop_value(v)  # ty: ignore[unresolved-attribute]
         else:
-            self.parser.add_prop_value(value)
+            self.parser.add_prop_value(value)  # ty: ignore[unresolved-attribute]
 
-        self.parser.end_property()
+        self.parser.end_property()  # ty: ignore[unresolved-attribute]
 
 
 def _set_up_state(props: Dict[str, List[str]], board_size: int, go):
     try:
         size = int(props['SZ'][0])
         if board_size > 0:
-            assert size == board_size, "Expected in {e}x{e}" \
-                " but game was in {a}x{a}".format(a=size, e=board_size)
+            assert size == board_size, (
+                'Expected in {e}x{e} but game was in {a}x{a}'.format(
+                    a=size, e=board_size
+                )
+            )
         board_size = size
         komi = float(props['KM'][0])
 
@@ -227,21 +232,22 @@ def _set_up_state(props: Dict[str, List[str]], board_size: int, go):
         move = parse_sgf_move(sgf_move, board_size)
         state.make_move(move, go.Color.WHITE)
 
-    state.current_player = go.Color.BLACK if start_player == 'B' \
-        else go.Color.WHITE
+    state.current_player = (
+        go.Color.BLACK if start_player == 'B' else go.Color.WHITE
+    )
 
     state.drop_history()
     return state
 
 
 MoveRecord = recordclass.recordclass(
-    'MoveRecord', (
-        'move', 'player', 'comment'
-     ))
+    'MoveRecord', ('move', 'player', 'comment')
+)
 
 
-def parse_one_game(sgf_string: str, board_size: int, go,
-                   *, allow_ongoing_game: bool = False):
+def parse_one_game(
+    sgf_string: str, board_size: int, go, *, allow_ongoing_game: bool = False
+):
     """parse sgf to return initial state, moves, winner, score
 
     :param board_size: expected board size or 0 (for any)
@@ -266,7 +272,11 @@ def parse_one_game(sgf_string: str, board_size: int, go,
             move = parse_sgf_move(props['B'][0], board_size)
             player = go.Color.BLACK
         else:
-            raise SgfContentError("Found a node without move properties")
+            if props.get('C') == ['Resignation']:
+                break
+            raise SgfContentError(
+                f'Found a node without move properties {props}'
+            )
 
         comment = props.get('C', [''])[0]
         moves.append(MoveRecord(move, player, comment))
@@ -288,8 +298,9 @@ def parse_one_game(sgf_string: str, board_size: int, go,
     return initial_state, moves, winner, score
 
 
-def sgf_generator(sgf_string: str, board_size: int, go,
-                  include_end=True) -> Generator[Tuple, None, None]:
+def sgf_generator(
+    sgf_string: str, board_size: int, go, include_end=True
+) -> Generator[Tuple, None, None]:
     """make a generator yielding state, move, winner, score, comment
 
     :param go: :py:mod:`migo` or :py:mod:`cygo`

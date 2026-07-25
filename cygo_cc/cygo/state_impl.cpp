@@ -28,9 +28,10 @@ void StateImpl::make_move(Color c, Move const &v) {
 
     if (played_in_opponent_eye_like) {
         for_each_4nbr(v, [&] (Move const& nbr) {
+            int chain_id = chain_group().chain_id(nbr);
             auto const& chain = chain_group().chain_at(nbr);
 
-            if (chain.is_in_atari() and chain.size() == 1) {
+            if (chain.is_in_atari() and chain_group().chain_size(chain_id) == 1) {
                 ko_vertex_ = nbr;
             }
         });
@@ -38,7 +39,8 @@ void StateImpl::make_move(Color c, Move const &v) {
 
     chain_group_.place_stone(c, v);
 
-    hash_history_.emplace(chain_group_.hash(), move_history_.size());
+    if (superko_rule_)
+        hash_history_.emplace(chain_group_.hash(), move_history_.size());
     color_move_history_[c].push_back(v);
     move_history_.push_back(v);
 }
@@ -51,15 +53,15 @@ void StateImpl::drop_history() {
     ko_vertex_ = Move::ANY;
 }
 
-std::unordered_set<Move> StateImpl::legal_moves(Color c, bool include_eye_likes) const {
-    std::unordered_set<Move> legals;
+std::vector<Move> StateImpl::legal_moves(Color c, bool include_eye_likes) const {
+    // usually policy infers, so code here is a naive implementation
+    std::vector<Move> legals;
 
-    for (auto const& v: chain_group_.empties()) {
+    for_each_coordinate(board_size_, [&] (Move const& v) {
         if (is_legal(c, v) and (not is_eye_like(c, v) or include_eye_likes)) {
-            legals.emplace(v);
+            legals.emplace_back(v);
         }
-    }
-
+    });
     return legals;
 }
 

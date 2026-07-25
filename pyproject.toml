@@ -1,15 +1,10 @@
 [build-system]
-requires = [
-    "setuptools>=42",
-    "wheel",
-    "ninja",
-    "cmake>=3.12",
-]
-build-backend = "setuptools.build_meta"
+requires = ["scikit-build-core >=0.4.3"]
+build-backend = "scikit_build_core.build"
 
 [project]
 name="migo"
-version="0.1.4"
+version="0.1.5"
 dependencies = [
   "recordclass",
   "numpy",
@@ -44,14 +39,16 @@ infer_cpu = [
   "onnx",
 ]
 infer_gpu = [
-  "torch==2.6",
-  "torch_tensorrt==2.6.1",
-  "torchvision==0.21.0",
+  "torch==2.12.1+cu130",
+  "torch_tensorrt==2.12.1+cu130",
+  "torchvision==0.27.1+cu130",
   "onnxruntime-gpu",
   "onnx",
 ]
 test = [
   "pytest",
+  "ruff",
+  "ty",
 ]
 doc = [
   "sphinx",
@@ -61,17 +58,48 @@ doc = [
 [project.urls]
 Repository = "https://github.com/tkaneko/migo"
 
+[tool.scikit-build]
+minimum-version = "0.4"
+build-dir = "build/{wheel_tag}"
+wheel.py-api = "cp312"
+sdist.exclude = ["*build", "doc-api", "doc"]
+
+
 [project.scripts]
 gomodel = "migo.utility.model:main"
 goselfplay = "migo.utility.selfplay:main"
 goguirunner = "migo.utility.goguirunner:main"
 gorltrain = "migo.utility.rltrain:main"
 
-[tool.setuptools]
-packages = ["migo", "migo.features", "migo.gtp"]
-
 [tool.pytest.ini_options]
 addopts = "-ra"
 testpaths = [
     "tests",
 ]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", marker = "sys_platform == 'darwin'"},
+  { index = "pytorch-cu130", marker = "sys_platform != 'darwin'"},
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+
+[tool.ty.environment]
+python-version = "3.12"
+
+[tool.ruff]
+line-length = 80
+indent-width = 4
+target-version = "py312"
+
+[tool.ruff.format]
+docstring-code-format = false
+quote-style = "single"
+exclude = ["*.pyi"]

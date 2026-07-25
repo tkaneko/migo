@@ -1,10 +1,8 @@
 import enum
 import sys
 from collections import namedtuple
-
 from logging import getLogger
-from typing import Callable, Tuple, List
-
+from typing import Callable, Dict, List, Tuple
 
 Status = enum.Enum('Status', 'success failure quit noop')
 
@@ -17,11 +15,12 @@ class GTPRuntimeError(Exception):
 
 
 class GTPRunner:
+    """base class of a gtp engine"""
 
     def __init__(self, *, logger=None):
         self._logger = logger or getLogger(__name__)
 
-        self._callbacks = {}  # type: Dict[str, Callback]
+        self._callbacks: Dict[str, Callback] = {}
 
         self.add_callback('quit', self.cmd_quit, arity=0)
         self.add_callback('list_commands', self.cmd_list_commands, arity=0)
@@ -29,19 +28,26 @@ class GTPRunner:
 
         self.add_static_callback('protocol_version', '2')
 
-    def add_callback(self, name: str, f: Callable[..., Tuple[Status, str]],
-                     arity: int | None = None, description: str | None = None
-                     ) -> None:
-        self._logger.debug("Add callback '%s' (arity: %s, description: %s)"
-                           % (name, arity, description))
+    def add_callback(
+        self,
+        name: str,
+        f: Callable[..., Tuple[Status, str]],
+        arity: int | None = None,
+        description: str | None = None,
+    ) -> None:
+        self._logger.debug(
+            "Add callback '%s' (arity: %s, description: %s)"
+            % (name, arity, description)
+        )
 
         if arity is not None and arity < 0:
-            raise ValueError("arity should be greater than or equal to 0,"
-                             " which is %d" % arity)
+            raise ValueError(
+                'arity should be greater than or equal to 0,'
+                ' which is %d' % arity
+            )
 
         if name in self._callbacks:
-            raise ValueError("callback named `%s` is already registered"
-                             % name)
+            raise ValueError('callback named `%s` is already registered' % name)
 
         self._callbacks[name] = Callback(f, arity, description)
 
@@ -52,7 +58,7 @@ class GTPRunner:
         words = line.split()
 
         if not words:
-            return Status.noop, ""
+            return Status.noop, ''
 
         command = words[0]
         params = words[1:]
@@ -63,13 +69,17 @@ class GTPRunner:
         callback = self._callbacks[command]
 
         if callback.arity is not None and len(params) != callback.arity:
-            return Status.failure, "Callback `%s` required %d argument(s)," \
-                " but provided %d argument(s)" \
-                % (command, callback.arity, len(params))
+            return (
+                Status.failure,
+                'Callback `%s` required %d argument(s),'
+                ' but provided %d argument(s)'
+                % (command, callback.arity, len(params)),
+            )
 
         try:
-            self._logger.debug("execute command '%s' with arguments %s"
-                               % (command, params))
+            self._logger.debug(
+                "execute command '%s' with arguments %s" % (command, params)
+            )
 
             if callback.arity == 0:
                 return callback.f()
@@ -78,10 +88,14 @@ class GTPRunner:
 
         except GTPRuntimeError as e:
             if callback.description is None:
-                return Status.failure, "Internal error occurred.\n{}".format(e)
+                return Status.failure, 'Internal error occurred.\n{}'.format(e)
             else:
-                return Status.failure, "Internal error occurred." \
-                    "\n{}\nusage: {}".format(e, callback.description)
+                return (
+                    Status.failure,
+                    'Internal error occurred.\n{}\nusage: {}'.format(
+                        e, callback.description
+                    ),
+                )
 
     def execute(self, stdin=None, stdout=None) -> None:
         stdin = stdin or sys.stdin
@@ -99,8 +113,9 @@ class GTPRunner:
 
             symbol = '?' if status == Status.failure else '='
 
-            stdout.write("{symbol} {output}\n\n".format(symbol=symbol,
-                                                        output=output))
+            stdout.write(
+                '{symbol} {output}\n\n'.format(symbol=symbol, output=output)
+            )
             stdout.flush()
 
             if status == Status.quit:
@@ -111,7 +126,7 @@ class GTPRunner:
         return [command for command in self._callbacks.keys()]
 
     def cmd_list_commands(self, *_) -> Tuple[Status, str]:
-        return Status.success, "\n".join(self.list_commands)
+        return Status.success, '\n'.join(self.list_commands)
 
     def cmd_known_commands(self, *_) -> Tuple[Status, str]:
         return self.cmd_list_commands(_)
@@ -121,8 +136,8 @@ class GTPRunner:
 
     @staticmethod
     def cmd_quit(*_) -> Tuple[Status, str]:
-        return Status.quit, "bye"
+        return Status.quit, 'bye'
 
     @staticmethod
     def cmd_unknown_command(command) -> Tuple[Status, str]:
-        return Status.failure, "unknown command: %s" % command
+        return Status.failure, 'unknown command: %s' % command

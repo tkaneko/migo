@@ -1,33 +1,38 @@
 import pytest
 
-import cygo
 import migo
-
-from migo.sgfutils import SgfColor, SgfContentError, parse_sgf_move, \
-    parse_sgf_result, sgf_generator, parse_one_game
+import migo.cygo as cygo
+from migo.sgfutils import (
+    SgfColor,
+    SgfContentError,
+    parse_one_game,
+    parse_sgf_move,
+    parse_sgf_result,
+    sgf_generator,
+)
 
 
 class TestSgfParseSgfResult:
     def test_when_result_is_draw(self):
-        winner, score = parse_sgf_result('Draw')
+        winner, score = parse_sgf_result("Draw")
 
         assert winner == SgfColor.NIL
         assert score == 0.0
 
     def test_when_result_is_black_won_by_resignation(self):
-        winner, score = parse_sgf_result('B+R')
+        winner, score = parse_sgf_result("B+R")
 
         assert winner == SgfColor.BLACK
         assert score == 0.0
 
     def test_when_result_is_white_won_by_resignation(self):
-        winner, score = parse_sgf_result('W+R')
+        winner, score = parse_sgf_result("W+R")
 
         assert winner == SgfColor.WHITE
         assert score == 0.0
 
     def test_when_result_is_black_won(self):
-        winner, score = parse_sgf_result('B+42.0')
+        winner, score = parse_sgf_result("B+42.0")
 
         assert winner == SgfColor.BLACK
         assert score == 42.0
@@ -48,29 +53,30 @@ class TestSgfParseSgfResult:
 
 class TestSgfParseSgfMove:
     def test_when_move_is_pass(self):
-        assert parse_sgf_move('') is None
-        assert parse_sgf_move('tt') is None
+        assert parse_sgf_move("") is None
+        assert parse_sgf_move("tt") is None
 
     def test_when_move_is_valid(self):
-        assert parse_sgf_move('aa', board_size=19) == (18, 0)
-        assert parse_sgf_move('AA', board_size=19) == (18, 0)
-        assert parse_sgf_move('ab', board_size=19) == (17, 0)
-        assert parse_sgf_move('ss', board_size=19) == (0, 18)
+        assert parse_sgf_move("aa", board_size=19) == (18, 0)
+        assert parse_sgf_move("AA", board_size=19) == (18, 0)
+        assert parse_sgf_move("ab", board_size=19) == (17, 0)
+        assert parse_sgf_move("ss", board_size=19) == (0, 18)
 
     def test_when_move_is_invalid(self):
         with pytest.raises(SgfContentError):
-            parse_sgf_move('foobar', 9)
+            parse_sgf_move("foobar", 9)
 
         with pytest.raises(SgfContentError):
-            parse_sgf_move('st', 9)
+            parse_sgf_move("st", 9)
 
         with pytest.raises(SgfContentError):
-            parse_sgf_move('aaa', 9)
+            parse_sgf_move("aaa", 9)
 
 
 class TestSgfGenerator:
-    @pytest.fixture(scope='class', autouse=True)
-    def sgf_string(self):
+    @pytest.fixture(scope="class", autouse=True)
+    @classmethod
+    def sgf_string(cls):
         yield """
 (;GM[1]SZ[9]KM[7.0]RE[B+26]RU[Chinese]
 ;B[de]C[comment1]
@@ -79,7 +85,7 @@ class TestSgfGenerator:
 )
 """
 
-    @pytest.mark.parametrize('go', [migo, cygo])
+    @pytest.mark.parametrize("go", [migo, cygo])
     def test_with_gomodule(self, sgf_string, go):
         g = sgf_generator(sgf_string, board_size=9, go=go)
 
@@ -88,31 +94,31 @@ class TestSgfGenerator:
         assert move == (4, 3)
         assert winner == go.Color.BLACK
         assert score == 26
-        assert comment == 'comment1'
+        assert comment == "comment1"
 
         state, move, winner, score, comment = next(g)
         assert state.current_player == go.Color.WHITE
         assert move == go.Pass
         assert winner == go.Color.BLACK
         assert score == 26
-        assert comment == 'comment2'
+        assert comment == "comment2"
 
         state, move, winner, score, comment = next(g)
         assert state.current_player == go.Color.BLACK
         assert move == go.Pass
         assert winner == go.Color.BLACK
         assert score == 26
-        assert comment == 'comment3'
+        assert comment == "comment3"
 
         state, move, winner, score, comment = next(g)
         assert state.current_player == go.Color.WHITE
         assert move is None
         assert winner == go.Color.BLACK
         assert score == 26
-        assert comment == ''
+        assert comment == ""
 
     def test_when_board_size_is_mismatch_then_raises_exception(
-            self, sgf_string
+        self, sgf_string
     ):
         with pytest.raises(SgfContentError):
             for _ in sgf_generator(sgf_string, board_size=19, go=None):
@@ -120,17 +126,18 @@ class TestSgfGenerator:
 
 
 def test_parse_migo():
-    import migo.features
     import numpy as np
+
+    import migo.features
+
     sgf_string = """
 (;GM[1]SZ[9]KM[7.0]RU[Chinese]
         AW[bb][cc]AB[dd][de][df]
 )
 """
-    initial_state, moves, winner, score = parse_one_game(
-            sgf_string, board_size=9, go=migo,
-            allow_ongoing_game=True
-        )
+    initial_state, _moves, _winner, _score = parse_one_game(
+        sgf_string, board_size=9, go=migo, allow_ongoing_game=True
+    )
     assert len(initial_state.history_buffer) == 0
     assert len(initial_state.empties) == (81 - 5)
     board = initial_state.board
@@ -150,30 +157,31 @@ def test_parse_cygo():
         AW[bb][cc]AB[dd][de][df]
 )
 """
-    import cygo.features
-    initial_state, moves, winner, score = parse_one_game(
-            sgf_string, board_size=9, go=cygo,
-            allow_ongoing_game=True
-        )
+    import migo.cygo.features as cygo_features
+
+    initial_state, _moves, _winner, _score = parse_one_game(
+        sgf_string, board_size=9, go=cygo, allow_ongoing_game=True
+    )
     assert initial_state.move_history == []
     assert initial_state.color_move_history(cygo.Color.BLACK) == []
     assert initial_state.color_move_history(cygo.Color.WHITE) == []
     for i in range(initial_state.max_history_n):
-        history = cygo.features.history_n(initial_state, i)
+        history = cygo_features.history_n(initial_state, i)
         assert history.sum() == 5
 
     moves = initial_state.legal_moves()
     assert len(moves) == 81 - 5
 
-    board_b = cygo.features.board_i(initial_state, 0, cygo.Color.BLACK)
+    board_b = cygo_features.board_i(initial_state, 0, cygo.Color.BLACK)
     assert board_b.sum() == 3
-    board_w = cygo.features.board_i(initial_state, 0, cygo.Color.WHITE)
+    board_w = cygo_features.board_i(initial_state, 0, cygo.Color.WHITE)
     assert board_w.sum() == 2
 
 
 def test_print():
     import numpy as np
-    sgf_string = '(;FF[4]GM[1]SZ[9]KM[7]RE[Draw];B[ee];W[he];B[tt];W[tt])'
+
+    sgf_string = "(;FF[4]GM[1]SZ[9]KM[7]RE[Draw];B[ee];W[he];B[tt];W[tt])"
     record = migo.parse_sgf_game(sgf_string)
     sgf2 = migo.record_to_sgf(record)
     record2 = migo.parse_sgf_game(sgf2)

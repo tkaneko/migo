@@ -171,6 +171,8 @@ bool Move::is_at_corner() const {
 }
 
 std::string Move::to_string() const {
+    if (*this == Move::PASS)
+        return "PASS";
     constexpr auto ROW = "ABCDEFGHJKLMNOPQRSTUVWXYZ";
 
     std::stringstream ss;
